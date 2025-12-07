@@ -1,104 +1,102 @@
-# Deployment Guide for Creators Edge AI
+# 🚀 Simple Deployment Guide
 
-This guide covers how to deploy the application. The recommended architecture is a **Split Deployment**:
-1.  **Backend + Database** on [Railway](https://railway.app)
-2.  **Frontend** on [Vercel](https://vercel.com)
-
----
-
-## 🚀 Part 1: Deploy Backend to Railway
-
-Railway is excellent for hosting Node.js servers and PostgreSQL databases with zero configuration.
-
-### 1. Prepare Railway Project
-1.  Go to [Railway](https://railway.app) and sign up/login.
-2.  Click **"New Project"** -> **"Empty Project"**.
-3.  Click **"Add Service"** -> **"Database"** -> **"PostgreSQL"**.
-    *   This creates your production database.
-    *   Once created, click on the **Postgres** service card → **Variables**.
-    *   Copy the `DATABASE_URL`. You will need this.
-
-### 2. Deploy Server Code
-1.  Connect your GitHub repository to Railway (or initialize one if you haven't).
-2.  In your Railway project, click **"Add Service"** -> **"GitHub Repo"** -> Select your repo.
-3.  **Configuring the Service:**
-    *   Click on the new service card (creators-edge-server).
-    *   Go to **Settings** -> **Root Directory**. Set this to: `/server`.
-    *   This tells Railway to only look at the backend folder.
-    *   The `start` command should automatically be detected from `package.json` (`node dist/index.js`).
-
-### 3. Environment Variables (Backend)
-Go to the **Variables** tab of your Server service and add the following keys. **Use your real production keys**:
-
-| Variable | Value / Description |
-| :--- | :--- |
-| `NODE_ENV` | `production` |
-| `PORT` | `3001` (or let Railway handle it, standard is usually auto-assigned) |
-| `DATABASE_URL` | Check the "Shared Variables" or paste the URL from your Postgres service. |
-| `JWT_SECRET` | A long, random string (e.g., generate with `openssl rand -hex 32`). |
-| `SESSION_SECRET` | Another long, random string. |
-| `FRONTEND_URL` | Your Vercel URL (e.g., `https://creators-edge.vercel.app`). *Fill this after deploying frontend.* |
-| `BACKEND_URL` | Your Railway Service URL (e.g., `https://creators-edge-server.up.railway.app`). You can find this in Settings -> Networking after generation. |
-| `GEMINI_API_KEY` | Your Google Gemini API Key. |
-| `GOOGLE_CLIENT_ID` | From Google Cloud Console. |
-| `GOOGLE_CLIENT_SECRET` | From Google Cloud Console. |
-| `GITHUB_CLIENT_ID` | From GitHub Developer Settings. |
-| `GITHUB_CLIENT_SECRET` | From GitHub Developer Settings. |
-| `LEMONSQUEEZY_API_KEY` | Your Lemon Squeezy API Key. |
-| `LEMONSQUEEZY_STORE_ID`| Your Store ID. |
-| `FLW_PUBLIC_KEY` | Flutterwave Public Key. |
-| `FLW_SECRET_KEY` | Flutterwave Secret Key. |
-
-**Important:** For OAuth (Google/GitHub), update your "Authorized Redirect URIs" in their respective consoles to match your production backend URL:
-*   `https://[YOUR-RAILWAY-URL]/api/auth/google/callback`
-*   `https://[YOUR-RAILWAY-URL]/api/auth/github/callback`
+We are going to deploy your app in 3 simple phases.
+**Railway** = Backend (Brain & Database).
+**Vercel** = Frontend (Face of the app).
 
 ---
 
-## ⚡ Part 2: Deploy Frontend to Vercel
+## 🚂 Part 1: Railway (The Backend)
 
-Vercel is optimized for React/Vite apps.
+### Step 1: Start a New Project
+1.  Go to your **[Dashboard](https://railway.com/dashboard)**. 
+    *(If you are on an account page, look for the railway icon in the top left corner)*.
+2.  Click the big **"New Project"** button.
+3.  Select **"Empty Project"**.
 
-### 1. Create Project
-1.  Go to [Vercel](https://vercel.com) and sign up/login.
-2.  Click **"Add New..."** -> **"Project"**.
-3.  Import your GitHub repository.
+### Step 2: Add the Database
+1.  Click **"Create"** (or "Add Service").
+2.  Choose **"Database"** ➝ **"PostgreSQL"**.
+3.  A "Postgres" card will appear on your screen. Click it.
+4.  Click the **"Variables"** tab.
+5.  **Copy** the `DATABASE_URL`. (Save this for later!)
 
-### 2. Configure Build
-1.  **Framework Preset:** Vite (should be detected automatically).
-2.  **Root Directory:** `./` (default).
-3.  **Build Command:** `npm run build` (default).
-4.  **Output Directory:** `dist` (default).
+### Step 3: Add Your Code
+1.  Close the Postgres card (click the X).
+2.  Click **"Create"** (or "Add Service") again.
+3.  Choose **"GitHub Repo"** ➝ select `creators-edge-ai`.
+4.  **⚡ Important:** A new card will appear for your repo. **Click it immediately**.
 
-### 3. Environment Variables (Frontend)
-Does the frontend need env vars? **No**, because we removed all secrets from the client!
-*   The `apiClient.ts` automatically sends requests to `/api/...`.
-*   We need to configure Vercel to **Rewrite** these `/api` requests to your Railway Backend.
+### Step 4: Point to the Server Folder (Critical!)
+1.  Inside your repo's card, click the **"Settings"** tab.
+2.  Scroll down to **"Root Directory"**.
+3.  Type: `/server`
+4.  Press **Enter** or Save.
+    *(This fixes the build error by telling Railway the backend code is hidden in the server folder).*
 
-### 4. Connect Frontend to Backend (The rewrite)
-I have created a `vercel.json` file in your root directory.
-1.  Open `vercel.json`.
-2.  **Update the destination URL**:
-    ```json
-    "destination": "https://[YOUR-RAILWAY-APP-NAME].railway.app/api/$1"
+### Step 5: Add Your Secrets (Variables)
+1.  Click the **"Variables"** tab.
+2.  Add the following keys (click "New Variable" for each):
+    *   `DATABASE_URL` ➝ Paste the value you copied in Step 2.
+    *   `NODE_ENV` ➝ `production`
+    *   `PORT` ➝ `3000`
+    *   `JWT_SECRET` ➝ (Type any random password)
+    *   `SESSION_SECRET` ➝ (Type any random password)
+    *   `GEMINI_API_KEY` ➝ (Your Google credentials)
+    *   `GOOGLE_CLIENT_ID` ➝ (Your Google ID)
+    *   `GOOGLE_CLIENT_SECRET` ➝ (Your Google Secret)
+    *   `GITHUB_CLIENT_ID` ➝ (Your GitHub ID)
+    *   `GITHUB_CLIENT_SECRET` ➝ (Your GitHub Secret)
+    *   `LEMONSQUEEZY_API_KEY` ➝ (Your Lemon Key)
+    *   `LEMONSQUEEZY_STORE_ID` ➝ (Your Store ID)
+    *   `FLW_PUBLIC_KEY` ➝ (Flutterwave Public)
+    *   `FLW_SECRET_KEY` ➝ (Flutterwave Secret)
+
+### Step 6: Get Your Live URL
+1.  Click the **"Settings"** tab.
+2.  Scroll to **"Networking"**.
+3.  Click **"Generate Domain"**.
+4.  **Copy this link** (e.g., `xxx.up.railway.app`). This is your **Backend URL**.
+5.  Go back to **"Variables"** and add one last one:
+    *   `BACKEND_URL` ➝ Paste your new link.
+
+---
+
+## ▲ Part 2: Vercel (The Frontend)
+
+### Step 1: Deploy
+1.  Go to **[Vercel.com](https://vercel.com/new)**.
+2.  Find `creators-edge-ai` and click **"Import"**.
+3.  Click **"Deploy"**. (Everything else is already perfect).
+4.  Wait for the confetti! 🎉
+5.  **Copy your website URL** (e.g., `creators-edge.vercel.app`).
+
+---
+
+## 🔗 Part 3: Connect Them (The Bridge)
+
+### Step 1: Tell Railway about the Website
+1.  Go back to **Railway** ➝ Click your Repo Card ➝ **"Variables"**.
+2.  Add:
+    *   `FRONTEND_URL` ➝ Paste your Vercel website link.
+    *(Railway will restart automatically. This allows people to log in from your site).*
+
+### Step 2: Tell the Website about Railway
+1.  Open the file `vercel.json` **on your computer**.
+2.  Find: `"destination": "https://creators-edge-production.up.railway.app/api/$1"`
+3.  Replace the URL with your **Real Backend URL** from Railway.
+    *(Keep the `/api/$1` at the end!)*.
+4.  Save and push to GitHub:
+    ```bash
+    git add vercel.json
+    git commit -m "Link frontend to backend"
+    git push origin main
     ```
-    Replace the placeholder with your **actual Railway Server URL**.
-3.  Push this change to GitHub.
 
-### 5. Deploy
-1.  Click **Deploy** on Vercel.
-2.  Once live, copy the final Vercel URL (e.g., `https://creators-edge.vercel.app`).
-3.  **Go back to Railway** -> Server Service -> Variables.
-4.  Update `FRONTEND_URL` to equal your new Vercel URL.
-5.  Railway will redeploy automatically.
+### Step 3: Update Google/GitHub
+1.  Go to your Google/GitHub Developer dashboards.
+2.  Update "Redirect URIs" to:
+    *   `https://<YOUR-BACKEND-URL>/api/auth/google/callback`
+    *   `https://<YOUR-BACKEND-URL>/api/auth/github/callback`
 
----
-
-## ✅ Checklist for Success
-1.  **Builds Passing:** Ensure `npm run build` works locally for both frontend and backend.
-2.  **Database:** Ensure Railway Postgres is connected via `DATABASE_URL`.
-3.  **Secrets:** Double-check all API keys in Railway Variables.
-4.  **Redirects:** Verify Google/GitHub Console Redirect URIs match the *Railway* URL.
-5.  **Proxy:** Verify `vercel.json` points to the *Railway* URL.
-
-Your app is now production-ready! 🚀
+**You are done!** 🚀
