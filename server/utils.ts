@@ -4,6 +4,10 @@ import jwt from 'jsonwebtoken';
 const SALT_ROUNDS = 10;
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-key-change-in-prod';
 
+if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET) {
+  console.warn('WARNING: Using default JWT_SECRET in production. This is insecure!');
+}
+
 export const hashPassword = async (password: string): Promise<string> => {
   return bcrypt.hash(password, SALT_ROUNDS);
 };

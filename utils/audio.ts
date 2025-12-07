@@ -119,27 +119,27 @@ declare const lamejs: any;
  * @returns A Blob containing MP3 data.
  */
 export const pcmToMp3Blob = (pcmData: Int16Array, sampleRate: number, numChannels: number): Blob => {
-    if (typeof lamejs === 'undefined') {
-        console.error('lamejs library not found. Please include it in your HTML to enable MP3 export.');
-        // Fallback to WAV if lamejs is not available
-        return pcmToWavBlob(pcmData, sampleRate, numChannels);
-    }
+  if (typeof lamejs === 'undefined') {
+    console.error('lamejs library not found. Please include it in your HTML to enable MP3 export.');
+    // Fallback to WAV if lamejs is not available
+    return pcmToWavBlob(pcmData, sampleRate, numChannels);
+  }
 
-    const mp3encoder = new lamejs.Mp3Encoder(numChannels, sampleRate, 128); // 128 kbps
-    const mp3Data: Int8Array[] = [];
+  const mp3encoder = new lamejs.Mp3Encoder(numChannels, sampleRate, 128); // 128 kbps
+  const mp3Data: Int8Array[] = [];
 
-    const bufferSize = 1152 * numChannels; // one frame
-    for (let i = 0; i < pcmData.length; i += bufferSize) {
-        const chunk = pcmData.subarray(i, i + bufferSize);
-        const mp3buf = mp3encoder.encodeBuffer(chunk);
-        if (mp3buf.length > 0) {
-            mp3Data.push(new Int8Array(mp3buf));
-        }
-    }
-    const mp3buf = mp3encoder.flush();
+  const bufferSize = 1152 * numChannels; // one frame
+  for (let i = 0; i < pcmData.length; i += bufferSize) {
+    const chunk = pcmData.subarray(i, i + bufferSize);
+    const mp3buf = mp3encoder.encodeBuffer(chunk);
     if (mp3buf.length > 0) {
-        mp3Data.push(new Int8Array(mp3buf));
+      mp3Data.push(new Int8Array(mp3buf));
     }
+  }
+  const mp3buf = mp3encoder.flush();
+  if (mp3buf.length > 0) {
+    mp3Data.push(new Int8Array(mp3buf));
+  }
 
-    return new Blob(mp3Data, { type: 'audio/mp3' });
+  return new Blob(mp3Data as any, { type: 'audio/mp3' });
 };

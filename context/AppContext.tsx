@@ -1,7 +1,7 @@
 
 import React, { createContext, useState, useEffect, useRef, useContext, ReactNode, useCallback, useMemo, FC } from 'react';
 import * as aiService from '../services/aiService';
-import { api, setAuthToken, removeAuthToken, getAuthToken } from '../utils/apiClient';
+import { api, setAuthToken, removeAuthToken, getAuthToken, getBaseUrl } from '../utils/apiClient';
 import {
   AnalysisResult,
   AnalysisHistoryItem,
@@ -98,7 +98,7 @@ interface AppContextType {
   sessionState: SessionState;
   suggestedActions: SuggestedAction[] | null;
   abortControllerRef: React.MutableRefObject<AbortController>;
-  withApiErrorHandling: <TResult,>(apiCall: (signal: AbortSignal, ...args: any[]) => Promise<TResult>, ...args: any[]) => Promise<TResult>;
+  withApiErrorHandling: <TResult, >(apiCall: (signal: AbortSignal, ...args: any[]) => Promise<TResult>, ...args: any[]) => Promise<TResult>;
 
   // New Generation-specific states
   generatedImage: string | null;
@@ -182,16 +182,16 @@ const DEFAULT_BRAND_VOICE: BrandVoice = {
 };
 
 const LOADING_MESSAGES = [
-    "Warming up the AI's neural networks...",
-    "Analyzing sentiment arc and emotional impact...",
-    "Evaluating hook effectiveness and clarity scores...",
-    "Cross-referencing with brand voice...",
-    "Generating actionable insights and coaching tips...",
-    "Finalizing your comprehensive report...",
-    "Processing media for deeper insights...",
-    "Synthesizing complex data into clear takeaways...",
-    "Optimizing for maximum engagement...",
-    "Crafting compelling narratives...",
+  "Warming up the AI's neural networks...",
+  "Analyzing sentiment arc and emotional impact...",
+  "Evaluating hook effectiveness and clarity scores...",
+  "Cross-referencing with brand voice...",
+  "Generating actionable insights and coaching tips...",
+  "Finalizing your comprehensive report...",
+  "Processing media for deeper insights...",
+  "Synthesizing complex data into clear takeaways...",
+  "Optimizing for maximum engagement...",
+  "Crafting compelling narratives...",
 ];
 
 // Define the core async logic of the API error handler outside the component
@@ -208,12 +208,12 @@ async function executeApiCallWithErrorHandling<TResult>(
   } catch (error: any) {
     if (error.name === 'AbortError') {
       console.log('API call aborted:', error.message);
-      throw error; 
+      throw error;
     }
     console.error('API call failed:', error);
     addNotification(error.message || 'An unexpected API error occurred.', 'error');
-    handleCancel(); 
-    throw error; 
+    handleCancel();
+    throw error;
   }
 }
 
@@ -261,7 +261,7 @@ export const AppProvider: FC<{ children: ReactNode }> = ({ children }) => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [activeProjectId, setActiveProjectId] = useLocalStorage<string | null>('activeProjectId', null);
   const [isProjectsModalOpen, setIsProjectsModalOpen] = useState(false);
-  
+
   const isAuthenticated = !!currentUser;
 
   // Global AbortController for all cancellable operations
@@ -269,33 +269,60 @@ export const AppProvider: FC<{ children: ReactNode }> = ({ children }) => {
 
   // --- Init Authentication & Data ---
   useEffect(() => {
-      const init = async () => {
-          const token = getAuthToken();
-          if (token) {
-              try {
-                  const { user } = await api.auth.getMe();
-                  setCurrentUser(user);
-                  
-                  try {
-                    const userProjects = await api.projects.list();
-                    setProjects(userProjects);
-                    // Auto-select project if one exists and none is active
-                    if (userProjects.length > 0 && (!activeProjectId || !userProjects.find((p: Project) => p.id === activeProjectId))) {
-                        setActiveProjectId(userProjects[0].id);
-                    }
-                  } catch (pErr) {
-                    console.error("Failed to load projects:", pErr);
-                  }
+    const init = async () => {
+      // Check for token in URL (Social Login Callback)
+      const params = new URLSearchParams(window.location.search);
+      const urlToken = params.get('token');
+      if (urlToken) {
+        setAuthToken(urlToken);
+        // Remove token from URL to clean up
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
 
-              } catch (error) {
-                  console.error("Auth check failed:", error);
-                  removeAuthToken();
-                  setCurrentUser(null);
-              }
+      // Check for payment callback
+      const paymentStatus = params.get('payment');
+      const txRef = params.get('tx_ref');
+      const transactionId = params.get('transaction_id');
+
+      if (paymentStatus === 'success' && (transactionId || txRef)) {
+        try {
+          await api.payment.verify('flutterwave', transactionId || txRef || ''); // Prefer transaction_id
+          addNotification('Payment verified! You are now a Pro member.', 'success');
+          // Refresh user if token exists (it should, or check/login logic handles it)
+        } catch (e) {
+          console.error("Payment verify failed", e);
+          addNotification('Payment verification failed.', 'error');
+        }
+        // Remove params
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+
+      const token = getAuthToken();
+      if (token) {
+        try {
+          const { user } = await api.auth.getMe();
+          setCurrentUser(user);
+
+          try {
+            const userProjects = await api.projects.list();
+            setProjects(userProjects);
+            // Auto-select project if one exists and none is active
+            if (userProjects.length > 0 && (!activeProjectId || !userProjects.find((p: Project) => p.id === activeProjectId))) {
+              setActiveProjectId(userProjects[0].id);
+            }
+          } catch (pErr) {
+            console.error("Failed to load projects:", pErr);
           }
-          setIsAuthChecking(false);
-      };
-      init();
+
+        } catch (error) {
+          console.error("Auth check failed:", error);
+          removeAuthToken();
+          setCurrentUser(null);
+        }
+      }
+      setIsAuthChecking(false);
+    };
+    init();
   }, []);
 
   // Smart Session: Load state when tab changes
@@ -389,48 +416,48 @@ export const AppProvider: FC<{ children: ReactNode }> = ({ children }) => {
   // --- Suggested Actions Logic ---
   useEffect(() => {
     if (!analysisResult) {
-        setSuggestedActions(null);
-        return;
+      setSuggestedActions(null);
+      return;
     }
 
     const actions: SuggestedAction[] = [];
     const { videoAnalysis, salesCallAnalysis, documentAnalysis } = analysisResult;
 
     if (videoAnalysis) {
-        if (videoAnalysis.hookQuality && videoAnalysis.hookQuality.score < 7) {
-            actions.push({
-                label: "Brainstorm 3 stronger hooks",
-                action: 'brainstorm_hooks',
-            });
-        }
-        if (videoAnalysis.ctaEffectiveness && videoAnalysis.ctaEffectiveness.score < 7) {
-            actions.push({
-                label: "Refine your Call-to-Action",
-                action: 'refine_cta',
-            });
-        }
+      if (videoAnalysis.hookQuality && videoAnalysis.hookQuality.score < 7) {
+        actions.push({
+          label: "Brainstorm 3 stronger hooks",
+          action: 'brainstorm_hooks',
+        });
+      }
+      if (videoAnalysis.ctaEffectiveness && videoAnalysis.ctaEffectiveness.score < 7) {
+        actions.push({
+          label: "Refine your Call-to-Action",
+          action: 'refine_cta',
+        });
+      }
     }
 
     if (salesCallAnalysis) {
-        const viralMoment = analysisResult.transcript?.find(t => t.tags?.includes('Viral Moment'));
-        if (viralMoment) {
-            actions.push({
-                label: "Turn 'Viral Moment' into a short-form script",
-                action: 'generate_script',
-                payload: { prompt: `Create a short, punchy video script based on this key moment from a sales call: "${viralMoment.text}"` }
-            });
-        }
+      const viralMoment = analysisResult.transcript?.find(t => t.tags?.includes('Viral Moment'));
+      if (viralMoment) {
+        actions.push({
+          label: "Turn 'Viral Moment' into a short-form script",
+          action: 'generate_script',
+          payload: { prompt: `Create a short, punchy video script based on this key moment from a sales call: "${viralMoment.text}"` }
+        });
+      }
     }
 
     if (videoAnalysis || documentAnalysis) {
-        actions.push({
-            label: "Repurpose this content",
-            action: 'repurpose',
-        });
+      actions.push({
+        label: "Repurpose this content",
+        action: 'repurpose',
+      });
     }
 
     setSuggestedActions(actions);
-}, [analysisResult, setSuggestedActions]);
+  }, [analysisResult, setSuggestedActions]);
 
 
   const addNotification = useCallback((message: string, type: 'success' | 'error' | 'info') => {
@@ -464,12 +491,12 @@ export const AppProvider: FC<{ children: ReactNode }> = ({ children }) => {
 
     // Call specific cleanup for LiveSession if it exists
     if (liveSessionCleanupRef.current) {
-        liveSessionCleanupRef.current();
-        liveSessionCleanupRef.current = null; // Clear the ref after cleanup
+      liveSessionCleanupRef.current();
+      liveSessionCleanupRef.current = null; // Clear the ref after cleanup
     }
-    
+
     if (!silent) {
-        addNotification('Operation cancelled.', 'info');
+      addNotification('Operation cancelled.', 'info');
     }
   }, [addNotification]);
 
@@ -488,8 +515,8 @@ export const AppProvider: FC<{ children: ReactNode }> = ({ children }) => {
 
   const handleFileSelect = useCallback((file: File) => {
     if (file.size > 50 * 1024 * 1024) { // 50MB limit
-        addNotification('File size exceeds 50MB limit.', 'error');
-        return;
+      addNotification('File size exceeds 50MB limit.', 'error');
+      return;
     }
     setSelectedFile(file);
     setFileUrl(URL.createObjectURL(file));
@@ -499,10 +526,10 @@ export const AppProvider: FC<{ children: ReactNode }> = ({ children }) => {
     }
   }, [addNotification, analysisType, setContentInputs]);
 
-   const handleFileSelectB = useCallback((file: File) => {
+  const handleFileSelectB = useCallback((file: File) => {
     if (file.size > 50 * 1024 * 1024) { // 50MB limit
-        addNotification('File size exceeds 50MB limit.', 'error');
-        return;
+      addNotification('File size exceeds 50MB limit.', 'error');
+      return;
     }
     setSelectedFileB(file);
     // Clear text inputs if a file is selected for relevant types
@@ -586,51 +613,47 @@ export const AppProvider: FC<{ children: ReactNode }> = ({ children }) => {
         const userProjects = await api.projects.list();
         setProjects(userProjects);
         if (userProjects.length > 0) {
-            setActiveProjectId(userProjects[0].id);
+          setActiveProjectId(userProjects[0].id);
         }
       } catch (pErr) {
         console.error("Failed to fetch projects on login", pErr);
       }
     } catch (error: any) {
-       addNotification(error.message || 'Login failed', 'error');
+      addNotification(error.message || 'Login failed', 'error');
     }
   }, [addNotification]);
 
   const handleSignup = useCallback(async (email: string, name: string) => {
     try {
       // Use a placeholder password for now
-      const { token, user } = await api.auth.signup(email, 'password123', name); 
+      const { token, user } = await api.auth.signup(email, 'password123', name);
       setAuthToken(token);
       setCurrentUser(user);
       addNotification('Account created successfully!', 'success');
       // New user will have a default project created by backend
       try {
-          const userProjects = await api.projects.list();
-          setProjects(userProjects);
-          if (userProjects.length > 0) {
-              setActiveProjectId(userProjects[0].id);
-          }
+        const userProjects = await api.projects.list();
+        setProjects(userProjects);
+        if (userProjects.length > 0) {
+          setActiveProjectId(userProjects[0].id);
+        }
       } catch (e) { console.error("Failed to fetch initial project", e); }
     } catch (error: any) {
-       addNotification(error.message || 'Signup failed', 'error');
+      addNotification(error.message || 'Signup failed', 'error');
     }
   }, [addNotification]);
 
   const handleGoogleLogin = useCallback(async () => {
-      // In a real implementation, this would involve redirects to OAuth providers.
-      // For now, we enforce the email/password flow connected to the backend.
-      addNotification('Social login requires production OAuth configuration. Please use Email/Password for testing.', 'info');
-  }, [addNotification]);
+    window.location.href = `${getBaseUrl()}/auth/google`;
+  }, []);
 
   const handleGithubLogin = useCallback(async () => {
-       // In a real implementation, this would involve redirects to OAuth providers.
-       // For now, we enforce the email/password flow connected to the backend.
-      addNotification('Social login requires production OAuth configuration. Please use Email/Password for testing.', 'info');
-  }, [addNotification]);
+    window.location.href = `${getBaseUrl()}/auth/github`;
+  }, []);
 
   const handleActivation = useCallback((user: User) => {
-      setCurrentUser({ ...user, activated: true });
-      addNotification('Account activated! Welcome!', 'success');
+    setCurrentUser({ ...user, activated: true });
+    addNotification('Account activated! Welcome!', 'success');
   }, [addNotification]);
 
   const handleLogout = useCallback(() => {
@@ -704,9 +727,9 @@ export const AppProvider: FC<{ children: ReactNode }> = ({ children }) => {
       return;
     }
     if (currentAnalysisType === 'abTest' && !((fileToUpload || scriptText) && (fileToUploadB || scriptTextB))) {
-        addNotification('Please provide content for both A and B for A/B testing.', 'error');
-        setIsAnalyzing(false);
-        return;
+      addNotification('Please provide content for both A and B for A/B testing.', 'error');
+      setIsAnalyzing(false);
+      return;
     }
 
     try {
@@ -740,22 +763,22 @@ export const AppProvider: FC<{ children: ReactNode }> = ({ children }) => {
           result = await withApiErrorHandling(aiService.analyzeLiveStream, fileToUpload);
           break;
         case 'abTest':
-            result = await withApiErrorHandling(aiService.analyzeABTest,
-                { script: scriptText, file: fileToUpload },
-                { script: scriptTextB, file: fileToUploadB }
-            );
-            break;
+          result = await withApiErrorHandling(aiService.analyzeABTest,
+            { script: scriptText, file: fileToUpload },
+            { script: scriptTextB, file: fileToUploadB }
+          );
+          break;
         case 'brandVoiceScore':
-            if (!scriptText) throw new Error('Text is required to score brand voice alignment.');
-            result = await withApiErrorHandling(aiService.scoreBrandVoiceAlignment, scriptText, brandVoice);
-            break;
+          if (!scriptText) throw new Error('Text is required to score brand voice alignment.');
+          result = await withApiErrorHandling(aiService.scoreBrandVoiceAlignment, scriptText, brandVoice);
+          break;
         case 'repurposeContent':
-             result = await withApiErrorHandling(aiService.analyzeAndRepurposeContent, scriptText, fileToUpload);
-             break;
+          result = await withApiErrorHandling(aiService.analyzeAndRepurposeContent, scriptText, fileToUpload);
+          break;
         case 'thumbnailAnalysis':
-             if (!fileToUpload) throw new Error('Image file is required for Thumbnail Analysis.');
-             result = await withApiErrorHandling(aiService.analyzeThumbnail, fileToUpload);
-             break;
+          if (!fileToUpload) throw new Error('Image file is required for Thumbnail Analysis.');
+          result = await withApiErrorHandling(aiService.analyzeThumbnail, fileToUpload);
+          break;
         default:
           addNotification('Selected analysis type is not yet implemented.', 'info');
           break;
@@ -796,13 +819,13 @@ export const AppProvider: FC<{ children: ReactNode }> = ({ children }) => {
     setIsAnalyzing(true);
     setBrandVoiceScoreAnalysis(null);
     try {
-        const result = await withApiErrorHandling(aiService.scoreBrandVoiceAlignment, text, brandVoice);
-        setBrandVoiceScoreAnalysis(result.brandVoiceScoreAnalysis || null);
-        onSuccessfulGeneration();
+      const result = await withApiErrorHandling(aiService.scoreBrandVoiceAlignment, text, brandVoice);
+      setBrandVoiceScoreAnalysis(result.brandVoiceScoreAnalysis || null);
+      onSuccessfulGeneration();
     } catch (error: any) {
-        if (error.name !== 'AbortError') addNotification(error.message || 'Failed to score brand voice alignment.', 'error');
+      if (error.name !== 'AbortError') addNotification(error.message || 'Failed to score brand voice alignment.', 'error');
     } finally {
-        setIsAnalyzing(false);
+      setIsAnalyzing(false);
     }
   }, [attemptGeneration, addNotification, withApiErrorHandling, brandVoice, onSuccessfulGeneration]);
 
@@ -811,16 +834,16 @@ export const AppProvider: FC<{ children: ReactNode }> = ({ children }) => {
     setIsGeneratingImproved(true);
     setImprovedContent(''); // Clear previous content and show loading
     try {
-        let improvedContentText = '';
-        await withApiErrorHandling(aiService.generateImprovedContent, analysisResult, brandVoice, (chunk: string) => {
-            improvedContentText += chunk;
-            setImprovedContent(improvedContentText);
-        });
-        onSuccessfulGeneration();
+      let improvedContentText = '';
+      await withApiErrorHandling(aiService.generateImprovedContent, analysisResult, brandVoice, (chunk: string) => {
+        improvedContentText += chunk;
+        setImprovedContent(improvedContentText);
+      });
+      onSuccessfulGeneration();
     } catch (error: any) {
-        if (error.name !== 'AbortError') addNotification(error.message || 'Failed to generate improved content.', 'error');
+      if (error.name !== 'AbortError') addNotification(error.message || 'Failed to generate improved content.', 'error');
     } finally {
-        setIsGeneratingImproved(false);
+      setIsGeneratingImproved(false);
     }
   }, [analysisResult, brandVoice, attemptGeneration, addNotification, withApiErrorHandling, onSuccessfulGeneration]);
 
@@ -829,16 +852,16 @@ export const AppProvider: FC<{ children: ReactNode }> = ({ children }) => {
     setIsGeneratingSocialPost(true);
     setSocialPost(null); // Clear previous and show loading
     try {
-        let postContent = '';
-        await withApiErrorHandling(aiService.generateSocialPost, analysisResult, platform, (chunk: string) => {
-            postContent += chunk;
-            setSocialPost({ platform, content: postContent });
-        });
-        onSuccessfulGeneration();
+      let postContent = '';
+      await withApiErrorHandling(aiService.generateSocialPost, analysisResult, platform, (chunk: string) => {
+        postContent += chunk;
+        setSocialPost({ platform, content: postContent });
+      });
+      onSuccessfulGeneration();
     } catch (error: any) {
-        if (error.name !== 'AbortError') addNotification(error.message || 'Failed to generate social post.', 'error');
+      if (error.name !== 'AbortError') addNotification(error.message || 'Failed to generate social post.', 'error');
     } finally {
-        setIsGeneratingSocialPost(false);
+      setIsGeneratingSocialPost(false);
     }
   }, [analysisResult, attemptGeneration, addNotification, withApiErrorHandling, onSuccessfulGeneration]);
 
@@ -847,13 +870,13 @@ export const AppProvider: FC<{ children: ReactNode }> = ({ children }) => {
     setIsGeneratingYouTubePost(true);
     setYouTubePost(null);
     try {
-        const post = await withApiErrorHandling(aiService.generateYouTubePost, analysisResult, brandVoice);
-        setYouTubePost(post);
-        onSuccessfulGeneration();
+      const post = await withApiErrorHandling(aiService.generateYouTubePost, analysisResult, brandVoice);
+      setYouTubePost(post);
+      onSuccessfulGeneration();
     } catch (error: any) {
-        if (error.name !== 'AbortError') addNotification(error.message || 'Failed to generate YouTube post.', 'error');
+      if (error.name !== 'AbortError') addNotification(error.message || 'Failed to generate YouTube post.', 'error');
     } finally {
-        setIsGeneratingYouTubePost(false);
+      setIsGeneratingYouTubePost(false);
     }
   }, [analysisResult, attemptGeneration, addNotification, withApiErrorHandling, brandVoice, onSuccessfulGeneration]);
 
@@ -862,16 +885,16 @@ export const AppProvider: FC<{ children: ReactNode }> = ({ children }) => {
     setIsGeneratingProductAd(true);
     setProductAd(''); // Clear previous and show loading
     try {
-        let adContent = '';
-        await withApiErrorHandling(aiService.generateProductAd, analysisResult, (chunk: string) => {
-            adContent += chunk;
-            setProductAd(adContent);
-        });
-        onSuccessfulGeneration();
+      let adContent = '';
+      await withApiErrorHandling(aiService.generateProductAd, analysisResult, (chunk: string) => {
+        adContent += chunk;
+        setProductAd(adContent);
+      });
+      onSuccessfulGeneration();
     } catch (error: any) {
-        if (error.name !== 'AbortError') addNotification(error.message || 'Failed to generate product ad.', 'error');
+      if (error.name !== 'AbortError') addNotification(error.message || 'Failed to generate product ad.', 'error');
     } finally {
-        setIsGeneratingProductAd(false);
+      setIsGeneratingProductAd(false);
     }
   }, [analysisResult, attemptGeneration, addNotification, withApiErrorHandling, onSuccessfulGeneration]);
 
@@ -880,13 +903,13 @@ export const AppProvider: FC<{ children: ReactNode }> = ({ children }) => {
     setIsGeneratingMonetizationAssets(true);
     setMonetizationAssets(null); // Clear previous and show loading
     try {
-        const assets = await withApiErrorHandling(aiService.generateMonetizationAssets, analysisResult, brandVoice);
-        setMonetizationAssets(assets);
-        onSuccessfulGeneration();
+      const assets = await withApiErrorHandling(aiService.generateMonetizationAssets, analysisResult, brandVoice);
+      setMonetizationAssets(assets);
+      onSuccessfulGeneration();
     } catch (error: any) {
-        if (error.name !== 'AbortError') addNotification(error.message || 'Failed to generate monetization assets.', 'error');
+      if (error.name !== 'AbortError') addNotification(error.message || 'Failed to generate monetization assets.', 'error');
     } finally {
-        setIsGeneratingMonetizationAssets(false);
+      setIsGeneratingMonetizationAssets(false);
     }
   }, [analysisResult, brandVoice, attemptGeneration, addNotification, withApiErrorHandling, onSuccessfulGeneration]);
 
@@ -895,13 +918,13 @@ export const AppProvider: FC<{ children: ReactNode }> = ({ children }) => {
     setIsGeneratingKeyTakeaways(true);
     setKeyTakeaways(null); // Clear previous and show loading
     try {
-        const takeaways = await withApiErrorHandling(aiService.generateKeyTakeaways, analysisResult);
-        setKeyTakeaways(takeaways);
-        onSuccessfulGeneration();
+      const takeaways = await withApiErrorHandling(aiService.generateKeyTakeaways, analysisResult);
+      setKeyTakeaways(takeaways);
+      onSuccessfulGeneration();
     } catch (error: any) {
-        if (error.name !== 'AbortError') addNotification(error.message || 'Failed to generate key takeaways.', 'error');
+      if (error.name !== 'AbortError') addNotification(error.message || 'Failed to generate key takeaways.', 'error');
     } finally {
-        setIsGeneratingKeyTakeaways(false);
+      setIsGeneratingKeyTakeaways(false);
     }
   }, [analysisResult, attemptGeneration, addNotification, withApiErrorHandling, onSuccessfulGeneration]);
 
@@ -910,16 +933,16 @@ export const AppProvider: FC<{ children: ReactNode }> = ({ children }) => {
     setIsGeneratingDescription(true);
     setGeneratedDescription(''); // Clear previous and show loading
     try {
-        let descriptionContent = '';
-        await withApiErrorHandling(aiService.generateDescription, analysisResult, brandVoice, (chunk: string) => {
-            descriptionContent += chunk;
-            setGeneratedDescription(descriptionContent);
-        });
-        onSuccessfulGeneration();
+      let descriptionContent = '';
+      await withApiErrorHandling(aiService.generateDescription, analysisResult, brandVoice, (chunk: string) => {
+        descriptionContent += chunk;
+        setGeneratedDescription(descriptionContent);
+      });
+      onSuccessfulGeneration();
     } catch (error: any) {
-        if (error.name !== 'AbortError') addNotification(error.message || 'Failed to generate description.', 'error');
+      if (error.name !== 'AbortError') addNotification(error.message || 'Failed to generate description.', 'error');
     } finally {
-        setIsGeneratingDescription(false);
+      setIsGeneratingDescription(false);
     }
   }, [analysisResult, brandVoice, attemptGeneration, addNotification, withApiErrorHandling, onSuccessfulGeneration]);
 
@@ -929,14 +952,14 @@ export const AppProvider: FC<{ children: ReactNode }> = ({ children }) => {
     if (feedbackAudio?.url) URL.revokeObjectURL(feedbackAudio.url); // Clean up previous audio
     setFeedbackAudio(null);
     try {
-        const feedbackText = `Strengths: ${analysisResult.feedbackCard.strengths.join('. ')}. Opportunities: ${analysisResult.feedbackCard.opportunities.join('. ')}.`;
-        const audioBlob = await withApiErrorHandling(aiService.generateSpeechFromText, feedbackText, voice, style);
-        setFeedbackAudio({ url: URL.createObjectURL(audioBlob), blob: audioBlob });
-        onSuccessfulGeneration();
+      const feedbackText = `Strengths: ${analysisResult.feedbackCard.strengths.join('. ')}. Opportunities: ${analysisResult.feedbackCard.opportunities.join('. ')}.`;
+      const audioBlob = await withApiErrorHandling(aiService.generateSpeechFromText, feedbackText, voice, style);
+      setFeedbackAudio({ url: URL.createObjectURL(audioBlob), blob: audioBlob });
+      onSuccessfulGeneration();
     } catch (error: any) {
-        if (error.name !== 'AbortError') addNotification(error.message || 'Failed to generate audio feedback.', 'error');
+      if (error.name !== 'AbortError') addNotification(error.message || 'Failed to generate audio feedback.', 'error');
     } finally {
-        setIsGeneratingAudio(false);
+      setIsGeneratingAudio(false);
     }
   }, [analysisResult, attemptGeneration, addNotification, feedbackAudio, withApiErrorHandling, onSuccessfulGeneration]);
 
@@ -946,13 +969,13 @@ export const AppProvider: FC<{ children: ReactNode }> = ({ children }) => {
     if (scriptAudio?.url) URL.revokeObjectURL(scriptAudio.url);
     setScriptAudio(null);
     try {
-        const audioBlob = await withApiErrorHandling(aiService.generateSpeechFromText, script, voice, style);
-        setScriptAudio({ url: URL.createObjectURL(audioBlob), blob: audioBlob });
-        onSuccessfulGeneration();
+      const audioBlob = await withApiErrorHandling(aiService.generateSpeechFromText, script, voice, style);
+      setScriptAudio({ url: URL.createObjectURL(audioBlob), blob: audioBlob });
+      onSuccessfulGeneration();
     } catch (error: any) {
-        if (error.name !== 'AbortError') addNotification(error.message || 'Failed to generate audio for script.', 'error');
+      if (error.name !== 'AbortError') addNotification(error.message || 'Failed to generate audio for script.', 'error');
     } finally {
-        setIsGeneratingScriptAudio(false);
+      setIsGeneratingScriptAudio(false);
     }
   }, [attemptGeneration, addNotification, scriptAudio, withApiErrorHandling, onSuccessfulGeneration]);
 
@@ -970,13 +993,13 @@ export const AppProvider: FC<{ children: ReactNode }> = ({ children }) => {
     setIsAnalyzing(true);
     setRetirementPlan(null); // Clear previous plan
     try {
-        const plan = await withApiErrorHandling(aiService.generateRetirementPlan, inputs);
-        setRetirementPlan(plan);
-        onSuccessfulGeneration();
+      const plan = await withApiErrorHandling(aiService.generateRetirementPlan, inputs);
+      setRetirementPlan(plan);
+      onSuccessfulGeneration();
     } catch (error: any) {
-        if (error.name !== 'AbortError') addNotification(error.message || 'Failed to generate retirement plan.', 'error');
+      if (error.name !== 'AbortError') addNotification(error.message || 'Failed to generate retirement plan.', 'error');
     } finally {
-        setIsAnalyzing(false);
+      setIsAnalyzing(false);
     }
   }, [attemptGeneration, addNotification, withApiErrorHandling, onSuccessfulGeneration]);
 
@@ -986,13 +1009,13 @@ export const AppProvider: FC<{ children: ReactNode }> = ({ children }) => {
     setAnalysisResult(item.result);
     // Restore relevant files/inputs if applicable
     if (item.fileName) {
-        // In a real app, you might re-fetch the file or store its content.
-        // For this demo, we'll just indicate it was a file analysis.
-        addNotification(`Loaded analysis for "${item.fileName}". Media preview might not be available.`, 'info');
+      // In a real app, you might re-fetch the file or store its content.
+      // For this demo, we'll just indicate it was a file analysis.
+      addNotification(`Loaded analysis for "${item.fileName}". Media preview might not be available.`, 'info');
     } else {
-        // Attempt to restore script if it was a text-based analysis
-        const script = item.result.transcript?.map(t => t.text).join('\n') || item.result.documentAnalysis?.summary || '';
-        setContentInputs(prev => ({ ...prev, script }));
+      // Attempt to restore script if it was a text-based analysis
+      const script = item.result.transcript?.map(t => t.text).join('\n') || item.result.documentAnalysis?.summary || '';
+      setContentInputs(prev => ({ ...prev, script }));
     }
     setIsHistoryOpen(false);
     setOverlayContent(null);
@@ -1012,8 +1035,8 @@ export const AppProvider: FC<{ children: ReactNode }> = ({ children }) => {
 
   const handleClearPromptHistory = useCallback(() => {
     if (window.confirm('Are you sure you want to delete all prompt history? This cannot be undone.')) {
-        setPromptHistory([]);
-        addNotification('Prompt history cleared.', 'info');
+      setPromptHistory([]);
+      addNotification('Prompt history cleared.', 'info');
     }
   }, [addNotification]);
 
@@ -1027,14 +1050,14 @@ export const AppProvider: FC<{ children: ReactNode }> = ({ children }) => {
     setIsGeneratingReframedContent(true);
     setGeneratedReframedContent(null);
     try {
-        const prompt = `Reframe the following summary for the target audience: "${targetAudience}".\n\nOriginal Summary:\n${originalSummary}`;
-        const reframedSummary = await withApiErrorHandling(aiService.refineTranscriptLine, originalSummary, prompt); // Reusing refine for simplicity
-        setGeneratedReframedContent({ audience: targetAudience, summary: reframedSummary });
-        onSuccessfulGeneration();
+      const prompt = `Reframe the following summary for the target audience: "${targetAudience}".\n\nOriginal Summary:\n${originalSummary}`;
+      const reframedSummary = await withApiErrorHandling(aiService.refineTranscriptLine, originalSummary, prompt); // Reusing refine for simplicity
+      setGeneratedReframedContent({ audience: targetAudience, summary: reframedSummary });
+      onSuccessfulGeneration();
     } catch (error: any) {
-        if (error.name !== 'AbortError') addNotification(error.message || 'Failed to reframe content.', 'error');
+      if (error.name !== 'AbortError') addNotification(error.message || 'Failed to reframe content.', 'error');
     } finally {
-        setIsGeneratingReframedContent(false);
+      setIsGeneratingReframedContent(false);
     }
   }, [attemptGeneration, addNotification, withApiErrorHandling, onSuccessfulGeneration]);
 
@@ -1053,8 +1076,8 @@ export const AppProvider: FC<{ children: ReactNode }> = ({ children }) => {
       setProjects(prev => [newProject, ...prev]);
       setActiveProjectId(newProject.id);
       addNotification(`Project "${name}" created and set as active.`, 'success');
-    } catch(error: any) {
-        addNotification(error.message || 'Failed to create project', 'error');
+    } catch (error: any) {
+      addNotification(error.message || 'Failed to create project', 'error');
     }
   }, [addNotification]);
 
@@ -1068,43 +1091,43 @@ export const AppProvider: FC<{ children: ReactNode }> = ({ children }) => {
 
     // Auto-create a "General" project if none is selected
     if (!targetProjectId) {
-        try {
-            const newProject = await api.projects.create("General");
-            setProjects(prev => [newProject, ...prev]);
-            targetProjectId = newProject.id;
-            setActiveProjectId(targetProjectId);
-            addNotification('Created "General" project automatically.', 'info');
-        } catch (error: any) {
-             addNotification('Failed to create a project to save to.', 'error');
-             return;
-        }
+      try {
+        const newProject = await api.projects.create("General");
+        setProjects(prev => [newProject, ...prev]);
+        targetProjectId = newProject.id;
+        setActiveProjectId(targetProjectId);
+        addNotification('Created "General" project automatically.', 'info');
+      } catch (error: any) {
+        addNotification('Failed to create a project to save to.', 'error');
+        return;
+      }
     }
 
     try {
-        const assetPayload = {
-            type,
-            name,
-            data,
-            sourceFile: selectedFile ? { name: selectedFile.name, type: selectedFile.type } : undefined,
-            sourceFileB: selectedFileB ? { name: selectedFileB.name, type: selectedFileB.type } : undefined,
-        };
-        const newAsset = await api.assets.create(targetProjectId, assetPayload);
-        
-        setProjects(prevProjects => prevProjects.map(project => {
-            if (project.id === targetProjectId) {
-                return {
-                    ...project,
-                    assets: [newAsset, ...(project.assets || [])],
-                };
-            }
-            return project;
-        }));
-        
-        setSaveConfirmation(`Saved to ${projects.find(p => p.id === targetProjectId)?.name || 'project'}!`);
-        setTimeout(() => setSaveConfirmation(''), 2000);
-        addNotification(`Asset "${name}" saved to project.`, 'success');
+      const assetPayload = {
+        type,
+        name,
+        data,
+        sourceFile: selectedFile ? { name: selectedFile.name, type: selectedFile.type } : undefined,
+        sourceFileB: selectedFileB ? { name: selectedFileB.name, type: selectedFileB.type } : undefined,
+      };
+      const newAsset = await api.assets.create(targetProjectId, assetPayload);
+
+      setProjects(prevProjects => prevProjects.map(project => {
+        if (project.id === targetProjectId) {
+          return {
+            ...project,
+            assets: [newAsset, ...(project.assets || [])],
+          };
+        }
+        return project;
+      }));
+
+      setSaveConfirmation(`Saved to ${projects.find(p => p.id === targetProjectId)?.name || 'project'}!`);
+      setTimeout(() => setSaveConfirmation(''), 2000);
+      addNotification(`Asset "${name}" saved to project.`, 'success');
     } catch (error: any) {
-        addNotification(error.message || 'Failed to save asset', 'error');
+      addNotification(error.message || 'Failed to save asset', 'error');
     }
   }, [activeProjectId, selectedFile, selectedFileB, addNotification, projects]);
 
@@ -1134,47 +1157,47 @@ export const AppProvider: FC<{ children: ReactNode }> = ({ children }) => {
   }, [handleCancel, clearResults, addNotification]);
 
   const handleDeleteProject = useCallback(async (id: string) => {
-      if (window.confirm('Are you sure you want to delete this project? This action cannot be undone.')) {
-          try {
-              await api.projects.delete(id);
-              setProjects(prev => prev.filter(p => p.id !== id));
-              if (activeProjectId === id) {
-                  setActiveProjectId(null);
-              }
-              addNotification('Project deleted.', 'info');
-          } catch (error: any) {
-               addNotification(error.message || 'Failed to delete project', 'error');
-          }
+    if (window.confirm('Are you sure you want to delete this project? This action cannot be undone.')) {
+      try {
+        await api.projects.delete(id);
+        setProjects(prev => prev.filter(p => p.id !== id));
+        if (activeProjectId === id) {
+          setActiveProjectId(null);
+        }
+        addNotification('Project deleted.', 'info');
+      } catch (error: any) {
+        addNotification(error.message || 'Failed to delete project', 'error');
       }
+    }
   }, [activeProjectId, setActiveProjectId, addNotification]);
 
   const handleDeleteAsset = useCallback(async (projectId: string, assetId: string) => {
-      if (window.confirm('Are you sure you want to delete this asset?')) {
-           try {
-              await api.assets.delete(projectId, assetId);
-              setProjects(prev => prev.map(p => {
-                  if (p.id === projectId) {
-                      const currentAssets = Array.isArray(p.assets) ? p.assets : [];
-                      return { ...p, assets: currentAssets.filter(a => a.id !== assetId) };
-                  }
-                  return p;
-              }));
-              addNotification('Asset deleted.', 'info');
-           } catch (error: any) {
-               addNotification(error.message || 'Failed to delete asset', 'error');
-           }
+    if (window.confirm('Are you sure you want to delete this asset?')) {
+      try {
+        await api.assets.delete(projectId, assetId);
+        setProjects(prev => prev.map(p => {
+          if (p.id === projectId) {
+            const currentAssets = Array.isArray(p.assets) ? p.assets : [];
+            return { ...p, assets: currentAssets.filter(a => a.id !== assetId) };
+          }
+          return p;
+        }));
+        addNotification('Asset deleted.', 'info');
+      } catch (error: any) {
+        addNotification(error.message || 'Failed to delete asset', 'error');
       }
+    }
   }, [addNotification]);
 
   const registerLiveSessionCleanup = useCallback((cleanupFn: (() => void) | null) => {
-      liveSessionCleanupRef.current = cleanupFn;
+    liveSessionCleanupRef.current = cleanupFn;
   }, []);
 
   const setBrandVoiceWrapped = useCallback(async (voice: BrandVoice): Promise<void> => {
-      // Simulate async operation, e.g., API call to save brand voice
-      await new Promise(resolve => setTimeout(resolve, 300));
-      setBrandVoiceState(voice); // Use the internal setter from useLocalStorage
-      return;
+    // Simulate async operation, e.g., API call to save brand voice
+    await new Promise(resolve => setTimeout(resolve, 300));
+    setBrandVoiceState(voice); // Use the internal setter from useLocalStorage
+    return;
   }, [setBrandVoiceState]); // Use the correct setter from useLocalStorage
 
   // --- Suggested Actions Runner ---
@@ -1188,18 +1211,18 @@ export const AppProvider: FC<{ children: ReactNode }> = ({ children }) => {
         break;
       case 'brainstorm_hooks':
         if (analysisResult?.videoAnalysis?.hookQuality?.critique) {
-            setInitialGenerationProps({ prompt: `Brainstorm 3 new video hooks based on this critique: "${analysisResult.videoAnalysis.hookQuality.critique}".`, type: 'script' });
-            handleTypeChange('contentGeneration');
+          setInitialGenerationProps({ prompt: `Brainstorm 3 new video hooks based on this critique: "${analysisResult.videoAnalysis.hookQuality.critique}".`, type: 'script' });
+          handleTypeChange('contentGeneration');
         } else {
-            addNotification('No specific hook critique found for brainstorming.', 'info');
+          addNotification('No specific hook critique found for brainstorming.', 'info');
         }
         break;
       case 'refine_cta':
         if (analysisResult?.videoAnalysis?.ctaEffectiveness?.suggestion) {
-            setInitialGenerationProps({ prompt: `Refine this call to action: "${analysisResult.videoAnalysis.ctaEffectiveness.suggestion}". Make it more urgent and benefit-driven.`, type: 'script' });
-            handleTypeChange('contentGeneration');
+          setInitialGenerationProps({ prompt: `Refine this call to action: "${analysisResult.videoAnalysis.ctaEffectiveness.suggestion}". Make it more urgent and benefit-driven.`, type: 'script' });
+          handleTypeChange('contentGeneration');
         } else {
-            addNotification('No specific CTA suggestion found for refinement.', 'info');
+          addNotification('No specific CTA suggestion found for refinement.', 'info');
         }
         break;
       case 'repurpose':
@@ -1208,10 +1231,10 @@ export const AppProvider: FC<{ children: ReactNode }> = ({ children }) => {
         break;
       case 'generate_script':
         if (action.payload?.prompt) {
-            setInitialGenerationProps({ prompt: action.payload.prompt, type: 'script' });
-            handleTypeChange('contentGeneration');
+          setInitialGenerationProps({ prompt: action.payload.prompt, type: 'script' });
+          handleTypeChange('contentGeneration');
         } else {
-            addNotification('No prompt provided for script generation.', 'error');
+          addNotification('No prompt provided for script generation.', 'error');
         }
         break;
       default:
@@ -1366,7 +1389,7 @@ export const AppProvider: FC<{ children: ReactNode }> = ({ children }) => {
     handleGenerateKeyTakeaways, handleGenerateDescription, handleListenToFeedback, handleListenToScript, handleGenerateVideoFromScript, onInitialPropsConsumed, attemptGeneration, onSuccessfulGeneration, handleGenerateRetirementPlan,
     handleLogin, handleSignup, handleGoogleLogin, handleGithubLogin, handleActivation, handleSelectFromHistory, handleClearAnalysisHistory, handleDeleteAnalysisHistoryItem, handleClearPromptHistory, handleDeletePromptHistoryItem,
     handleGenerateReframedContent, handleGenerateThumbnailVariations, handleProjectsModalToggle, handleCreateProject, handleSelectProject, handleSaveAssetToProject, handleLoadAsset, handleDeleteProject, handleDeleteAsset, registerLiveSessionCleanup,
-    setBrandVoiceWrapped, 
+    setBrandVoiceWrapped,
     setScriptAudio // Added this dependency
   ]);
 

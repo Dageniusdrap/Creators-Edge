@@ -10,18 +10,18 @@ const isProduction = process.env.NODE_ENV === 'production';
 // If DATABASE_URL exists (Cloud/Supabase), use Postgres. Otherwise use local SQLite file.
 const config = (isProduction || process.env.DATABASE_URL)
   ? {
-      client: 'pg',
-      connection: process.env.DATABASE_URL + (process.env.DATABASE_URL?.includes('localhost') ? '' : '?sslmode=require'),
-      searchPath: ['public', 'public'],
-    }
+    client: 'pg',
+    connection: process.env.DATABASE_URL + (process.env.DATABASE_URL?.includes('localhost') ? '' : '?sslmode=require'),
+    searchPath: ['public', 'public'],
+  }
   : {
-      client: 'sqlite3',
-      connection: {
-        // Use process.cwd() to correctly locate the sqlite file relative to where the server is started
-        filename: path.resolve((process as any).cwd(), 'database.sqlite'),
-      },
-      useNullAsDefault: true,
-    };
+    client: 'sqlite3',
+    connection: {
+      // Use process.cwd() to correctly locate the sqlite file relative to where the server is started
+      filename: path.resolve((process as any).cwd(), 'database.sqlite'),
+    },
+    useNullAsDefault: true,
+  };
 
 export const db = knex(config);
 
@@ -34,7 +34,7 @@ export const initDb = async () => {
       await db.schema.createTable('users', (table) => {
         table.string('id').primary();
         table.string('email').unique().notNullable();
-        table.string('password').notNullable();
+        table.string('password'); // Nullable for social login users
         table.string('name');
         table.string('plan').defaultTo('Free');
         table.string('role').defaultTo('user');
@@ -71,7 +71,7 @@ export const initDb = async () => {
       });
       console.log('Created assets table');
     }
-    
+
     console.log(`Database initialized (${(isProduction || process.env.DATABASE_URL) ? 'PostgreSQL' : 'SQLite'})`);
   } catch (error) {
     console.error('Error initializing database:', error);

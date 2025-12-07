@@ -7,17 +7,17 @@ import { useAppContext } from '../context/AppContext';
 import { motion } from 'framer-motion';
 
 export const AnalysisInput: React.FC = () => {
-    const { 
-        analysisType, 
-        selectedFile, 
-        handleFileSelect, 
-        handleClearFile, 
-        handleAnalysisSubmit, 
+    const {
+        analysisType,
+        selectedFile,
+        handleFileSelect,
+        handleClearFile,
+        handleAnalysisSubmit,
         isAnalyzing,
         contentInputs,
         setContentInputs
     } = useAppContext();
-    
+
     const isTranscriptionTool = analysisType === 'transcription';
     const isThumbnailTool = analysisType === 'thumbnailAnalysis';
     const [inputType, setInputType] = useState<'file' | 'text'>(isTranscriptionTool || isThumbnailTool ? 'file' : 'text');
@@ -76,7 +76,7 @@ export const AnalysisInput: React.FC = () => {
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files.length > 0) handleFileSelect(e.target.files[0]);
     };
-    
+
     const getAcceptableFileTypes = () => {
         switch (analysisType) {
             case 'videoAnalysis':
@@ -90,7 +90,7 @@ export const AnalysisInput: React.FC = () => {
             case 'financialReport':
                 return '.pdf, .txt, .md, .docx, .csv';
             case 'salesCall':
-                 return 'audio/*, video/*, .m4a, .mp3, .wav';
+                return 'audio/*, video/*, .m4a, .mp3, .wav';
             case 'thumbnailAnalysis':
                 return 'image/*';
             default:
@@ -108,7 +108,7 @@ export const AnalysisInput: React.FC = () => {
             default: return 'Paste your content here...';
         }
     };
-    
+
     const isMultiInput = ['socialMedia', 'productAd', 'documentAnalysis', 'financialReport'].includes(analysisType);
     const isLinkInputVisible = ['socialMedia', 'productAd'].includes(analysisType);
     const canSubmit = !isAnalyzing && (!!selectedFile || localScript.trim() !== '');
@@ -125,27 +125,27 @@ export const AnalysisInput: React.FC = () => {
 
     return (
         <div className="w-full max-w-lg mx-auto">
-             {!isTranscriptionTool && !isThumbnailTool && (
-                <div className="flex bg-black/20 rounded-lg p-1 mb-6">
-                    <button onClick={() => setInputType('file')} className={`w-1/2 py-2 text-sm font-semibold rounded-md relative transition-colors ${inputType !== 'file' ? 'text-gray-300 hover:text-white' : ''}`}>
-                        {inputType === 'file' && <motion.div layoutId="input-type" className="absolute inset-0 bg-white/10 rounded-md shadow" />}
-                        <span className="relative z-10">Upload File</span>
+            {!isTranscriptionTool && !isThumbnailTool && (
+                <div className="flex bg-surface-100 rounded-lg p-1 mb-6 border border-white/5">
+                    <button onClick={() => setInputType('file')} className={`w-1/2 py-2 text-sm font-semibold rounded-md relative transition-colors ${inputType !== 'file' ? 'text-text-secondary hover:text-text-primary' : ''}`}>
+                        {inputType === 'file' && <motion.div layoutId="input-type" className="absolute inset-0 bg-surface-300 rounded-md shadow-sm" />}
+                        <span className="relative z-10 text-white">Upload File</span>
                     </button>
-                    <button onClick={() => setInputType('text')} className={`w-1/2 py-2 text-sm font-semibold rounded-md relative transition-colors ${inputType !== 'text' ? 'text-gray-300 hover:text-white' : ''}`}>
-                        {inputType === 'text' && <motion.div layoutId="input-type" className="absolute inset-0 bg-white/10 rounded-md shadow" />}
-                        <span className="relative z-10">Paste Text</span>
+                    <button onClick={() => setInputType('text')} className={`w-1/2 py-2 text-sm font-semibold rounded-md relative transition-colors ${inputType !== 'text' ? 'text-text-secondary hover:text-text-primary' : ''}`}>
+                        {inputType === 'text' && <motion.div layoutId="input-type" className="absolute inset-0 bg-surface-300 rounded-md shadow-sm" />}
+                        <span className="relative z-10 text-white">Paste Text</span>
                     </button>
                 </div>
-             )}
+            )}
 
             {inputType === 'file' ? (
                 selectedFile ? (
-                    <div className="relative">
-                         <div className="flex items-center justify-between bg-white/10 p-4 rounded-lg border border-white/20">
-                            <p className="text-sm font-medium text-white truncate max-w-[85%]">{selectedFile.name}</p>
-                            <button 
+                    <div className="relative fade-in">
+                        <div className="flex items-center justify-between bg-surface-50 p-4 rounded-lg border border-primary/30 shadow-lg shadow-primary/5">
+                            <p className="text-sm font-medium text-text-primary truncate max-w-[85%]">{selectedFile.name}</p>
+                            <button
                                 onClick={handleClearFile}
-                                className="p-1 hover:bg-white/20 rounded-full transition-colors text-gray-400 hover:text-white"
+                                className="p-1 hover:bg-surface-200 rounded-full transition-colors text-text-secondary hover:text-error"
                                 title="Remove file"
                             >
                                 <XIcon className="h-5 w-5" />
@@ -154,39 +154,44 @@ export const AnalysisInput: React.FC = () => {
                     </div>
                 ) : (
                     <div
-                        className={`flex flex-col items-center justify-center w-full p-8 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${isDragging ? 'border-indigo-500 bg-indigo-500/10' : 'border-white/20 hover:border-indigo-500'}`}
+                        className={`flex flex-col items-center justify-center w-full p-8 border-2 border-dashed rounded-lg cursor-pointer transition-all duration-300 group
+                            ${isDragging
+                                ? 'border-primary bg-primary/10 scale-[1.02]'
+                                : 'border-surface-300 bg-surface-50/50 hover:border-primary/50 hover:bg-surface-100'}`}
                         onDragEnter={handleDragEnter} onDragLeave={handleDragLeave} onDragOver={handleDragOver} onDrop={handleDrop} onClick={() => fileInputRef.current?.click()}
                     >
-                        <UploadIcon className="mx-auto h-12 w-12 text-gray-400" />
-                        <p className="mt-2 text-sm text-gray-400">
-                            <span className="font-semibold">Click to upload</span> or drag and drop
+                        <div className={`p-4 rounded-full mb-3 transition-colors ${isDragging ? 'bg-primary/20' : 'bg-surface-200 group-hover:bg-primary/20'}`}>
+                            <UploadIcon className={`h-8 w-8 transition-colors ${isDragging ? 'text-primary' : 'text-text-secondary group-hover:text-primary'}`} />
+                        </div>
+                        <p className="mt-2 text-sm text-text-primary font-medium">
+                            Click to upload or drag and drop
                         </p>
-                        <p className="text-xs text-gray-500">
+                        <p className="text-xs text-text-muted mt-1">
                             {getAcceptableFileTypes().split(', ').map(t => t.split('/')[1]?.toUpperCase() || t).join(', ')} (Max 50MB)
                         </p>
                         <input ref={fileInputRef} type="file" className="hidden" accept={getAcceptableFileTypes()} onChange={handleFileChange} />
                     </div>
                 )
             ) : (
-                <div className="space-y-4">
+                <div className="space-y-4 fade-in">
                     <textarea
-                        className="w-full h-40 p-3 bg-white/5 border border-white/20 rounded-md focus:ring-1 focus:ring-indigo-500 focus:outline-none text-white"
+                        className="input-field w-full h-40 resize-none"
                         placeholder={getPlaceholder()}
                         value={localScript}
                         onChange={(e) => onTextChange(e, 'script')}
                     />
                     {isMultiInput && (
                         <textarea
-                            className="w-full h-20 p-3 bg-white/5 border border-white/20 rounded-md focus:ring-1 focus:ring-indigo-500 focus:outline-none text-white"
+                            className="input-field w-full h-20 resize-none"
                             placeholder="Add a brief description or goal for your content (optional)..."
                             value={localDescription}
                             onChange={(e) => onTextChange(e, 'description')}
                         />
                     )}
-                     {isLinkInputVisible && (
+                    {isLinkInputVisible && (
                         <input
                             type="text"
-                            className="w-full p-3 bg-white/5 border border-white/20 rounded-md focus:ring-1 focus:ring-indigo-500 focus:outline-none text-white"
+                            className="input-field w-full"
                             placeholder="Add a link for context (optional)..."
                             value={localLink}
                             onChange={(e) => onTextChange(e, 'link')}
@@ -194,15 +199,15 @@ export const AnalysisInput: React.FC = () => {
                     )}
                 </div>
             )}
-            
+
             <div className="mt-6">
                 <button
                     id="analysis-submit-button"
-                    className="w-full bg-indigo-600 text-white font-bold py-3 px-4 rounded-md hover:bg-indigo-700 transition-colors disabled:bg-indigo-400 disabled:cursor-not-allowed flex items-center justify-center transform active:scale-[0.98]"
+                    className="w-full btn-primary py-3 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
                     onClick={handleAnalysisSubmit}
                     disabled={!canSubmit}
                 >
-                    <SparklesIcon className="h-5 w-5 mr-2" />
+                    <SparklesIcon className="h-5 w-5 mr-2 animate-pulse-glow" />
                     {isAnalyzing ? 'Analyzing...' : 'Run Analysis'}
                 </button>
             </div>

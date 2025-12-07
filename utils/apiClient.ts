@@ -3,17 +3,17 @@
 // 2. If PROD is true (but no specific URL), assume relative path '/api' (Single container)
 // 3. Otherwise, use localhost.
 
-const getBaseUrl = () => {
+export const getBaseUrl = () => {
+  // @ts-ignore
+  if (import.meta.env?.VITE_BACKEND_URL) {
     // @ts-ignore
-    if (import.meta.env?.VITE_BACKEND_URL) {
-        // @ts-ignore
-        return import.meta.env.VITE_BACKEND_URL;
-    }
-    // @ts-ignore
-    if (import.meta.env?.PROD) {
-        return '/api';
-    }
-    return 'http://localhost:3001/api';
+    return import.meta.env.VITE_BACKEND_URL;
+  }
+  // @ts-ignore
+  if (import.meta.env?.PROD) {
+    return '/api';
+  }
+  return 'http://localhost:3001/api';
 }
 
 const API_BASE_URL = getBaseUrl();
@@ -28,7 +28,7 @@ interface RequestOptions extends RequestInit {
 
 async function request<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
   const token = getAuthToken();
-  
+
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
     ...options.headers as any,
@@ -49,20 +49,20 @@ async function request<T>(endpoint: string, options: RequestOptions = {}): Promi
   const url = endpoint.startsWith('/') ? `${API_BASE_URL}${endpoint}` : `${API_BASE_URL}/${endpoint}`;
 
   const response = await fetch(url, config);
-  
+
   // Handle session expiry (401)
   if (response.status === 401) {
-      removeAuthToken();
-      // Prevent infinite loops: Only redirect to home if we aren't already there or on an auth page
-      if (!window.location.pathname.includes('auth') && window.location.pathname !== '/') {
-          window.location.assign('/'); 
-      }
-      throw new Error('Session expired. Please log in again.');
+    removeAuthToken();
+    // Prevent infinite loops: Only redirect to home if we aren't already there or on an auth page
+    if (!window.location.pathname.includes('auth') && window.location.pathname !== '/') {
+      window.location.assign('/');
+    }
+    throw new Error('Session expired. Please log in again.');
   }
 
   // Handle empty responses (e.g., 204 No Content)
   if (response.status === 204) {
-      return {} as T;
+    return {} as T;
   }
 
   const data = await response.json();
@@ -76,39 +76,57 @@ async function request<T>(endpoint: string, options: RequestOptions = {}): Promi
 
 export const api = {
   auth: {
-    signup: (email: string, password: string, name: string) => 
-      request<{ token: string, user: any }>('/auth/signup', { 
-        method: 'POST', 
-        body: JSON.stringify({ email, password, name }) 
+    signup: (email: string, password: string, name: string) =>
+      request<{ token: string, user: any }>('/auth/signup', {
+        method: 'POST',
+        body: JSON.stringify({ email, password, name })
       }),
-    login: (email: string, password: string) => 
-      request<{ token: string, user: any }>('/auth/login', { 
-        method: 'POST', 
-        body: JSON.stringify({ email, password }) 
+    login: (email: string, password: string) =>
+      request<{ token: string, user: any }>('/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ email, password })
       }),
     getMe: () => request<{ user: any }>('/auth/me'),
   },
   projects: {
     list: () => request<any[]>('/projects'),
-    create: (name: string) => 
-      request<any>('/projects', { 
-        method: 'POST', 
-        body: JSON.stringify({ name }) 
+    create: (name: string) =>
+      request<any>('/projects', {
+        method: 'POST',
+        body: JSON.stringify({ name })
       }),
-    delete: (id: string) => 
-      request<{ success: true }>('/projects/' + id, { 
-        method: 'DELETE' 
+    delete: (id: string) =>
+      request<{ success: true }>('/projects/' + id, {
+        method: 'DELETE'
       }),
   },
   assets: {
-    create: (projectId: string, assetData: any) => 
-      request<any>(`/projects/${projectId}/assets`, { 
-        method: 'POST', 
-        body: JSON.stringify(assetData) 
+    create: (projectId: string, assetData: any) =>
+      request<any>(`/projects/${projectId}/assets`, {
+        method: 'POST',
+        body: JSON.stringify(assetData)
       }),
-    delete: (projectId: string, assetId: string) => 
-      request<{ success: true }>(`/projects/${projectId}/assets/${assetId}`, { 
-        method: 'DELETE' 
+    delete: (projectId: string, assetId: string) =>
+      request<{ success: true }>(`/projects/${projectId}/assets/${assetId}`, {
+        method: 'DELETE'
       }),
-  }
+  },
+  payment: {
+    checkout: (provider: string, data: any) =>
+      request<{ url: string }>('/payment/checkout', {
+        method: 'POST',
+        body: JSON.stringify({ provider, ...data })
+      }),
+    verify: (provider: string, transaction_id: string) =>
+      request<{ success: boolean }>('/payment/verify', {
+        method: 'POST',
+        body: JSON.stringify({ provider, transaction_id })
+      }),
+  },
+  // Generic helper for ad-hoc requests
+  post: (endpoint: string, body: any) =>
+    request<any>(endpoint, {
+      method: 'POST',
+      body: JSON.stringify(body)
+    }),
 };

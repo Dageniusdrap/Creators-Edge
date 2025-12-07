@@ -1,38 +1,81 @@
-import express from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import path from 'path';
+import helmet from 'helmet';
+import morgan from 'morgan';
+import rateLimit from 'express-rate-limit';
 import { initDb } from './store';
 import routes from './routes';
-import rateLimit from 'express-rate-limit';
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+const isProduction = process.env.NODE_ENV === 'production';
 
-// Enable CORS for frontend requests
+// --- Security & Middleware ---
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://cdnjs.cloudflare.com"], // Allow necessary scripts
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", "data:", "https:", "blob:"],
+      mediaSrc: ["'self'", "data:", "https:", "blob:"],
+      connectSrc: ["'self'", "https://generativelanguage.googleapis.com"], // Allow Google AI calls (if backend proxies, this might not be needed client-side, but good for safety)
+    },
+  },
+  crossOriginEmbedderPolicy: false,
+}));
+
+app.use(morgan(isProduction ? 'combined' : 'dev'));
+
+// Enable CORS (Allow all for now, restrict in production if domain known)
 app.use(cors());
 
 // Increase payload limit for base64 images/audio uploads
-app.use(express.json({ limit: '50mb' }) as express.RequestHandler);
-app.use(express.urlencoded({ extended: true, limit: '50mb' }) as express.RequestHandler);
+app.use(express.json({ limit: '50mb' }));
+import session from 'express-session';
+import passport from 'passport';
+import { setupPassport } from './auth';
+
+// ... (previous middlewares)
+
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+
+// Session configuration
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'dev_secret_key_change_in_prod',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: isProduction, // Secure in production
+    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+  }
+}));
+
+// Initialize Passport
+app.use(passport.initialize());
+app.use(passport.session());
+setupPassport();
 
 // Rate Limiting: Prevent abuse (300 requests per 15 minutes per IP)
 const limiter = rateLimit({
-	windowMs: 15 * 60 * 1000, // 15 minutes
-	max: 300, 
-	standardHeaders: true, 
-	legacyHeaders: false, 
-    message: 'Too many requests from this IP, please try again after 15 minutes.'
+  windowMs: 15 * 60 * 1000,
+  max: 300,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: 'Too many requests from this IP, please try again after 15 minutes.'
 });
 
-// Apply the rate limiting middleware to all API calls
-app.use('/api', limiter as express.RequestHandler);
+app.use('/api', limiter);
+
+// --- Routes ---
 
 // Health check
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+app.get('/api/health', (req: Request, res: Response) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString(), env: process.env.NODE_ENV });
 });
 
 // Mount API Routes
@@ -40,32 +83,38 @@ app.use('/api', routes);
 
 // --- PRODUCTION SETUP ---
 // Serve static frontend files if in production mode
-if (process.env.NODE_ENV === 'production') {
+if (isProduction) {
   // Serve the 'dist' directory from the ROOT project folder
-  // Using process.cwd() is safer for resolving paths in the Docker container
-  const distPath = path.join((process as any).cwd(), 'dist');
+  const distPath = path.join(process.cwd(), 'dist');
   console.log(`Production mode: Serving static files from ${distPath}`);
-  app.use(express.static(distPath) as express.RequestHandler);
+
+  app.use(express.static(distPath));
 
   // Handle React routing: return index.html for any unknown non-API paths
-  app.get('*', (req, res) => {
+  app.get('*', (req: Request, res: Response) => {
     if (!req.path.startsWith('/api')) {
-        res.sendFile(path.join(distPath, 'index.html'));
+      res.sendFile(path.join(distPath, 'index.html'));
     }
   });
 }
 
+// Global Error Handler
+app.use((err: any, req: Request, res: Response, next: NextFunction) => {
+  console.error('Unhandled Error:', err);
+  res.status(500).json({ error: 'Internal Server Error', details: isProduction ? undefined : err.message });
+});
+
 // Initialize DB and start server
 const startServer = async () => {
   try {
-    await initDb(); // Ensure tables exist (SQLite or Postgres)
+    await initDb(); // Ensure tables exist
     app.listen(PORT, () => {
       console.log(`Server running on http://localhost:${PORT}`);
+      console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
     });
   } catch (err) {
     console.error('Failed to initialize server:', err);
-    // In production, letting the process crash will trigger a restart by the cloud provider
-    (process as any).exit(1); 
+    process.exit(1);
   }
 };
 

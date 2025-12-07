@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { SidebarNav } from './components/SidebarNav';
 import { GenerationView } from './components/GenerationView';
 import { BrandVoiceSetup } from './components/BrandVoiceSetup';
-import { PricingView } from './components/PricingView';
+
 import { AuthView } from './components/AuthView';
 import { ActivationView } from './components/ActivationView';
 import { AnalysisHistoryModal } from './components/AnalysisHistoryModal';
@@ -11,12 +11,14 @@ import { HistoryIcon } from './components/icons/HistoryIcon';
 import { OnboardingTour } from './components/OnboardingTour';
 import { Overlay } from './components/Overlay';
 import { RetirementPlanner } from './components/RetirementPlanner';
+import { HomeDashboard } from './components/HomeDashboard';
+import { PricingPage } from './components/PricingPage';
 import { LiveDebugger } from './components/LiveDebugger';
 import { NotificationContainer } from './components/Notification';
 import { QuestionMarkCircleIcon } from './components/icons/QuestionMarkCircleIcon';
 import { AnalysisInput } from './components/AnalysisInput';
 import { ABTestInput } from './components/ABTestInput';
-import { useAppContext } from './context/AppContext';
+import { useAppContext, AppProvider } from './context/AppContext';
 import { Loader } from './components/Loader';
 import { motion, AnimatePresence, type Transition } from 'framer-motion';
 import { toolConfig } from './utils/toolConfig';
@@ -24,14 +26,14 @@ import { EmptyState } from './components/EmptyState';
 import { ExportHubModal } from './components/ExportHubModal';
 import { BrandVoiceChecker } from './components/BrandVoiceChecker';
 import { ProjectsModal } from './components/ProjectsModal';
-import { FolderIcon } from './components/icons/FolderIcon';
-import { HomeDashboard } from './components/HomeDashboard';
 import { ApiKeySetup } from './components/ApiKeySetup';
 import { ExportIcon } from './components/icons/ExportIcon';
 import { Bars3Icon } from './components/icons/Bars3Icon';
 import type { AppAnalysisType } from './types';
 import { Dashboard } from './components/Dashboard';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import AnimatedGrid from './components/ui/AnimatedGrid';
+import { BoltIcon } from './components/ui/FuturisticIcons';
 
 
 const ANALYSIS_ONBOARDING_STEPS = [
@@ -53,100 +55,101 @@ const GENERATION_ONBOARDING_STEPS = [
 ];
 
 const videoBackgrounds: Partial<Record<AppAnalysisType, string>> = {
-  videoAnalysis: "https://videos.pexels.com/video-files/4784414/4784414-hd_1920_1080_25fps.mp4",
-  socialMedia: "https://videos.pexels.com/video-files/8051939/8051939-hd_1920_1080_30fps.mp4",
-  financialReport: "https://videos.pexels.com/video-files/7578135/7578135-hd_1920_1080_25fps.mp4",
-  salesCall: "https://videos.pexels.com/video-files/5990264/5990264-hd_1920_1080_25fps.mp4",
-  contentGeneration: "https://videos.pexels.com/video-files/3254013/3254013-hd_1920_1080_25fps.mp4",
-  repurposeContent: "https://videos.pexels.com/video-files/5495893/5495893-hd_1920_1080_25fps.mp4",
-  thumbnailAnalysis: "https://videos.pexels.com/video-files/4434246/4434246-hd_1920_1080_25fps.mp4",
+    videoAnalysis: "https://videos.pexels.com/video-files/4784414/4784414-hd_1920_1080_25fps.mp4",
+    socialMedia: "https://videos.pexels.com/video-files/8051939/8051939-hd_1920_1080_30fps.mp4",
+    financialReport: "https://videos.pexels.com/video-files/7578135/7578135-hd_1920_1080_25fps.mp4",
+    salesCall: "https://videos.pexels.com/video-files/5990264/5990264-hd_1920_1080_25fps.mp4",
+    contentGeneration: "https://videos.pexels.com/video-files/3254013/3254013-hd_1920_1080_25fps.mp4",
+    repurposeContent: "https://videos.pexels.com/video-files/5495893/5495893-hd_1920_1080_25fps.mp4",
+    thumbnailAnalysis: "https://videos.pexels.com/video-files/4434246/4434246-hd_1920_1080_25fps.mp4",
 };
 
 const defaultVideoBackground = "https://videos.pexels.com/video-files/853874/853874-hd_1920_1080_25fps.mp4";
 
 const getGreeting = () => {
-  const hour = new Date().getHours();
-  if (hour < 12) return "Good morning, Creator!";
-  if (hour < 18) return "Good afternoon, Creator!";
-  return "Good evening, Creator!";
+    const hour = new Date().getHours();
+    if (hour < 12) return "Good morning, Creator!";
+    if (hour < 18) return "Good afternoon, Creator!";
+    return "Good evening, Creator!";
 };
 
-export const App: React.FC = () => {
-  const {
-    // State
-    isAuthChecking, // NEW
-    analysisType,
-    analysisResult,
-    isAuthenticated,
-    currentUser,
-    isUploading,
-    isAnalyzing,
-    uploadProgress,
-    isHistoryOpen,
-    isTourActive,
-    overlayContent,
-    notifications,
-    loadingMessages,
-    isExportHubOpen,
-    projects,
-    activeProjectId,
-    // Actions
-    handleLogout,
-    setIsHistoryOpen,
-    startTour,
-    removeNotification,
-    handleCancel,
-    setIsExportHubOpen,
-    handleProjectsModalToggle,
-  } = useAppContext();
+// AuthenticatedView component to encapsulate the main app logic when authenticated
+// Main App Content Component
+const AppContent: React.FC = () => {
+    const {
+        isAuthChecking,
+        analysisType,
+        analysisResult,
+        isAuthenticated,
+        currentUser,
+        isUploading,
+        isAnalyzing,
+        uploadProgress,
+        isHistoryOpen,
+        isTourActive,
+        overlayContent,
+        notifications,
+        loadingMessages,
+        isExportHubOpen,
+        projects,
+        activeProjectId,
+        // Actions
+        handleLogout,
+        setIsHistoryOpen,
+        startTour,
+        removeNotification,
+        handleCancel,
+        setIsExportHubOpen,
+        handleProjectsModalToggle,
+    } = useAppContext();
 
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const videoRef = useRef<HTMLVideoElement>(null);
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  useEffect(() => {
-    const videoEl = videoRef.current;
-    if (!videoEl) return;
+    useEffect(() => {
+        const videoEl = videoRef.current;
+        if (!videoEl) return;
 
-    // Reset video state for new source
-    videoEl.style.display = 'block';
-    videoEl.style.opacity = '0';
-    
-    const handleCanPlay = () => {
-      // Fade in smoothly once data is ready
-      videoEl.style.transition = 'opacity 1s ease-in-out';
-      videoEl.style.opacity = '0.3';
-    };
-
-    const handleError = (e: Event) => {
-        // Silently fail to CSS gradient background if video fails
-        console.warn("Video background failed to load, falling back to gradient.");
-        videoEl.style.display = 'none';
+        // Reset video state for new source
+        videoEl.style.display = 'block';
         videoEl.style.opacity = '0';
-    };
 
-    videoEl.addEventListener('canplay', handleCanPlay);
-    videoEl.addEventListener('error', handleError);
+        const handleCanPlay = () => {
+            // Fade in smoothly once data is ready
+            videoEl.style.transition = 'opacity 1s ease-in-out';
+            videoEl.style.opacity = '0.3';
+        };
 
-    // Attempt to play
-    const playPromise = videoEl.play();
-    if (playPromise !== undefined) {
-        playPromise.catch(error => {
-            // Auto-play was prevented or failed
-            console.warn("Video autoplay prevented/failed:", error);
-            // We don't strictly hide it here, as it might just be paused, 
-            // but if it's a loading error, the 'error' event will catch it.
-        });
-    }
+        const handleError = (e: Event) => {
+            // Silently fail to CSS gradient background if video fails
+            console.warn("Video background failed to load, falling back to gradient.");
+            videoEl.style.display = 'none';
+            videoEl.style.opacity = '0';
+        };
 
-    return () => {
-      videoEl.removeEventListener('canplay', handleCanPlay);
-      videoEl.removeEventListener('error', handleError);
-    };
-  }, [analysisType]); 
-  
-  const analysisInputView = () => {
+        videoEl.addEventListener('canplay', handleCanPlay);
+        videoEl.addEventListener('error', handleError);
+
+        // Attempt to play
+        const playPromise = videoEl.play();
+        if (playPromise !== undefined) {
+            playPromise.catch(error => {
+                // Auto-play was prevented or failed
+                console.warn("Video autoplay prevented/failed:", error);
+                // We don't strictly hide it here, as it might just be paused, 
+                // but if it's a loading error, the 'error' event will catch it.
+            });
+        }
+
+        return () => {
+            videoEl.removeEventListener('canplay', handleCanPlay);
+            videoEl.removeEventListener('error', handleError);
+        };
+    }, [analysisType]);
+
+    const analysisInputView = () => {
         const inputTools: AppAnalysisType[] = [
-            'videoAnalysis', 'transcription', 'liveStream', 'documentAnalysis', 
+            'videoAnalysis', 'transcription', 'liveStream', 'documentAnalysis',
             'financialReport', 'socialMedia', 'salesCall', 'productAd',
             'repurposeContent', 'thumbnailAnalysis'
         ];
@@ -168,9 +171,9 @@ export const App: React.FC = () => {
             );
         }
         if (analysisType === 'abTest') {
-             if (!currentTool) return <div className="bg-red-500/20 text-white p-4 text-center rounded-lg">Configuration missing for {analysisType}</div>;
-             return (
-                 <div id="analysis-input-area" className="w-full max-w-4xl mx-auto">
+            if (!currentTool) return <div className="bg-red-500/20 text-white p-4 text-center rounded-lg">Configuration missing for {analysisType}</div>;
+            return (
+                <div id="analysis-input-area" className="w-full max-w-4xl mx-auto">
                     <EmptyState
                         icon={currentTool.icon}
                         title={currentTool.label}
@@ -179,293 +182,265 @@ export const App: React.FC = () => {
                         <ABTestInput />
                     </EmptyState>
                 </div>
-             );
+            );
         }
         return null;
     };
 
-  const renderContent = () => {
-    // Show loading state while checking auth
-    if (isAuthChecking) {
+    const renderContent = () => {
+        // Show loading state while checking auth
+        if (isAuthChecking) {
+            return (
+                <div className="flex items-center justify-center min-h-screen">
+                    <Loader message="Initializing..." />
+                </div>
+            );
+        }
+
+        if (!isAuthenticated) {
+            return (
+                <div className="flex items-center justify-center min-h-full">
+                    <AuthView />
+                </div>
+            );
+        }
+        if (!currentUser?.activated) {
+            return (
+                <div className="flex items-center justify-center min-h-full">
+                    <ActivationView />
+                </div>
+            );
+        }
+
+        if (analysisType === 'home') {
+            return <HomeDashboard />;
+        }
+        if (analysisType === 'pricing') {
+            return <PricingPage />;
+        }
+        if (analysisType === 'contentGeneration') {
+            return <div id="analysis-input-area" className="w-full"><GenerationView /></div>;
+        }
+        if (analysisType === 'brandVoice') {
+            return (
+                <div id="analysis-input-area" className="w-full max-w-lg mx-auto">
+                    <BrandVoiceSetup />
+                </div>
+            );
+        }
+        if (analysisType === 'brandVoiceScore') {
+            return (
+                <div id="analysis-input-area" className="w-full max-w-lg mx-auto">
+                    <BrandVoiceChecker />
+                </div>
+            );
+        }
+        if (analysisType === 'apiKeys') {
+            return <div id="analysis-input-area" className="w-full max-w-lg mx-auto"><ApiKeySetup /></div>;
+        }
+
+        if (analysisType === 'retirementPlanner') {
+            return <div id="analysis-input-area" className="w-full"><RetirementPlanner /></div>;
+        }
+        if (analysisType === 'liveDebugger') {
+            return <div id="analysis-input-area" className="w-full"><LiveDebugger /></div>;
+        }
+
+        // Fallback for all other analysis types
         return (
-            <div className="flex items-center justify-center min-h-screen">
-                <Loader message="Initializing..." />
+            <div className="w-full">
+                {analysisResult ? (
+                    <Dashboard />
+                ) : (
+                    <div className="flex items-center justify-center min-h-full pt-16">
+                        {analysisInputView()}
+                    </div>
+                )}
             </div>
         );
-    }
+    };
 
-    if (!isAuthenticated) {
-        return (
-          <div className="flex items-center justify-center min-h-full">
-            <AuthView />
-          </div>
-        );
-    }
-    if (!currentUser?.activated) {
-        return (
-          <div className="flex items-center justify-center min-h-full">
-            <ActivationView />
-          </div>
-        );
-    }
-    
-    if (analysisType === 'home') {
-        return <HomeDashboard />;
-    }
-    if (analysisType === 'contentGeneration') {
-      return <div id="analysis-input-area" className="w-full"><GenerationView /></div>;
-    }
-    if (analysisType === 'brandVoice') {
-      return (
-        <div id="analysis-input-area" className="w-full max-w-lg mx-auto">
-          <BrandVoiceSetup />
-        </div>
-      );
-    }
-    if (analysisType === 'brandVoiceScore') {
-      return (
-        <div id="analysis-input-area" className="w-full max-w-lg mx-auto">
-          <BrandVoiceChecker />
-        </div>
-      );
-    }
-    if (analysisType === 'apiKeys') {
-      return <div id="analysis-input-area" className="w-full max-w-lg mx-auto"><ApiKeySetup /></div>;
-    }
-    if (analysisType === 'pricing') {
-      return <div id="analysis-input-area" className="w-full"><PricingView /></div>;
-    }
-     if (analysisType === 'retirementPlanner') {
-      return <div id="analysis-input-area" className="w-full"><RetirementPlanner /></div>;
-    }
-    if (analysisType === 'liveDebugger') {
-        return <div id="analysis-input-area" className="w-full"><LiveDebugger /></div>;
-    }
+    const isGenerationView = analysisType === 'contentGeneration';
+    const tourSteps = isGenerationView ? GENERATION_ONBOARDING_STEPS : ANALYSIS_ONBOARDING_STEPS;
 
-    // Fallback for all other analysis types
+    const currentToolConfig = toolConfig[analysisType as AppAnalysisType];
+    const loaderMessage = "Uploading your file...";
+
+    const pageVariants = {
+        initial: { opacity: 0, y: 20 },
+        in: { opacity: 1, y: 0 },
+        out: { opacity: 0, y: -20 }
+    };
+
+    const pageTransition: Transition = {
+        type: "tween",
+        ease: "anticipate",
+        duration: 0.5
+    };
+
+    // Safe access to active project
+    const activeProject = Array.isArray(projects) ? projects.find(p => p.id === activeProjectId) : null;
+
     return (
-      <div className="w-full">
-        {analysisResult ? (
-            <Dashboard />
-        ) : (
-          <div className="flex items-center justify-center min-h-full pt-16">
-            {analysisInputView()}
-          </div>
-        )}
-      </div>
-    );
-  };
-  
-  const isGenerationView = analysisType === 'contentGeneration';
-  const tourSteps = isGenerationView ? GENERATION_ONBOARDING_STEPS : ANALYSIS_ONBOARDING_STEPS;
-  
-  const currentToolConfig = toolConfig[analysisType as AppAnalysisType];
-  const loaderMessage = "Uploading your file...";
+        <div className="min-h-screen bg-black text-white font-sans relative overflow-hidden">
+            {/* Animated background */}
+            <div className="fixed inset-0 bg-gradient-to-br from-gray-950 via-gray-900 to-black pointer-events-none z-0">
+                <AnimatedGrid />
 
-  const pageVariants = {
-    initial: { opacity: 0, y: 20 },
-    in: { opacity: 1, y: 0 },
-    out: { opacity: 0, y: -20 }
-  };
-
-  const pageTransition: Transition = {
-    type: "tween",
-    ease: "anticipate",
-    duration: 0.5
-  };
-
-  // Safe access to active project
-  const activeProject = Array.isArray(projects) ? projects.find(p => p.id === activeProjectId) : null;
-
-  return (
-    <div className="min-h-screen text-gray-900 dark:text-gray-100 font-sans flex">
-        <video 
-            key={analysisType} // Force remount when analysisType changes
-            ref={videoRef} 
-            autoPlay 
-            muted 
-            loop 
-            playsInline 
-            id="bg-video"
-            src={videoBackgrounds[analysisType as AppAnalysisType] || defaultVideoBackground}
-            style={{ display: 'none', opacity: 0 }} // Start hidden
-        >
-            Your browser does not support the video tag.
-        </video>
-        <NotificationContainer notifications={notifications} onDismiss={removeNotification} />
-        {(isUploading || isAnalyzing) && (
-            <Overlay>
-                <Loader 
-                    message={isUploading ? loaderMessage : undefined} 
-                    onCancel={handleCancel} 
-                    progress={isUploading ? uploadProgress : null}
-                    progressMessages={isAnalyzing ? loadingMessages : undefined}
+                {/* Floating orbs */}
+                <motion.div
+                    animate={{
+                        x: [0, 100, 0],
+                        y: [0, -100, 0],
+                    }}
+                    transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+                    className="absolute top-20 left-20 w-96 h-96 bg-cyan-500/20 rounded-full blur-3xl opacity-50"
                 />
-            </Overlay>
-        )}
-        {overlayContent && <Overlay>{overlayContent}</Overlay>}
-        {isTourActive && (
-            <OnboardingTour steps={tourSteps} />
-        )}
-        
-        {/* Render Sidebar only if authenticated AND not checking auth */}
-        {isAuthenticated && !isAuthChecking && (
-            <>
-                {/* Desktop Sidebar */}
-                <div className="hidden md:block">
-                    <SidebarNav />
-                </div>
-                
-                {/* Mobile Sidebar Overlay */}
-                <AnimatePresence>
-                    {isMobileMenuOpen && (
-                        <motion.div 
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            className="fixed inset-0 z-40 md:hidden bg-black/60 backdrop-blur-sm"
-                            onClick={() => setIsMobileMenuOpen(false)}
-                        >
-                            <motion.div 
-                                initial={{ x: '-100%' }}
-                                animate={{ x: 0 }}
-                                exit={{ x: '-100%' }}
-                                transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                                className="absolute top-0 left-0 h-full"
-                                onClick={e => e.stopPropagation()}
-                            >
-                                <SidebarNav onClose={() => setIsMobileMenuOpen(false)} />
-                            </motion.div>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
-            </>
-        )}
-        
-        <div className="flex-1 flex flex-col min-w-0">
-            <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto overflow-x-hidden relative">
-                <ErrorBoundary>
-                    <AnimatePresence mode="wait">
-                    <motion.div
-                        key={isAuthenticated ? 'authed' : 'unauthed'}
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        transition={{ duration: 0.3 }}
-                    >
-                    {/* If checking auth, renderContent handles the loader. If not, it renders Auth or App */}
-                    {!isAuthenticated || isAuthChecking ? (
-                        renderContent()
-                    ) : (
-                        <>
-                        <motion.header
-                            initial={{ opacity: 0, y: -20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.5, delay: 0.2 }}
-                            className="glass-card flex justify-between items-center mb-8 p-4 sticky top-0 z-30"
-                        >
-                            <div className="flex items-center gap-4 overflow-hidden">
-                                <button 
-                                    className="md:hidden p-1 text-gray-300 hover:text-white rounded-md hover:bg-white/10"
-                                    onClick={() => setIsMobileMenuOpen(true)}
-                                >
-                                    <Bars3Icon className="h-6 w-6" />
-                                </button>
+                <motion.div
+                    animate={{
+                        x: [0, -100, 0],
+                        y: [0, 100, 0],
+                    }}
+                    transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
+                    className="absolute bottom-20 right-20 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl opacity-50"
+                />
+            </div>
 
-                                {currentToolConfig && (
-                                    <div className="min-w-0">
-                                    <h1 className="text-lg sm:text-2xl font-bold text-white truncate">{isGenerationView ? getGreeting() : currentToolConfig.label}</h1>
-                                    <p className="text-xs sm:text-sm text-gray-300 mt-1 truncate hidden sm:block">{isGenerationView ? "What masterpiece will you bring to life today?" : currentToolConfig.description}</p>
+            <NotificationContainer notifications={notifications} onDismiss={removeNotification} />
+            {(isUploading || isAnalyzing) && (
+                <Overlay>
+                    <Loader
+                        message={isUploading ? loaderMessage : undefined}
+                        onCancel={handleCancel}
+                        progress={isUploading ? uploadProgress : null}
+                        progressMessages={isAnalyzing ? loadingMessages : undefined}
+                    />
+                </Overlay>
+            )}
+            {overlayContent && <Overlay>{overlayContent}</Overlay>}
+            {isTourActive && (
+                <OnboardingTour steps={tourSteps} />
+            )}
+
+            {/* Main content - Higher Z-index */}
+            <div className="relative z-10 flex flex-col h-screen">
+                {/* Header */}
+                {isAuthenticated && !isAuthChecking && (
+                    <motion.header
+                        initial={{ y: -100, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        transition={{ duration: 0.8, type: "spring" }}
+                        className="relative flex-none z-50"
+                    >
+                        <div className="absolute inset-0 bg-gradient-to-r from-gray-900/80 via-gray-800/80 to-gray-900/80 backdrop-blur-2xl border-b border-cyan-500/30" />
+                        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <motion.div
+                                    animate={{ rotate: 360 }}
+                                    transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+                                    className="relative"
+                                >
+                                    <div className="absolute inset-0 bg-gradient-to-r from-cyan-500 to-purple-500 rounded-lg blur-md opacity-75" />
+                                    <div className="relative w-10 h-10 bg-gradient-to-br from-cyan-400 to-purple-600 rounded-lg flex items-center justify-center">
+                                        <BoltIcon className="h-6 w-6 text-white" />
                                     </div>
-                                )}
-                                <div className="hidden sm:block h-10 border-l border-white/20"></div>
-                                <div className="hidden sm:flex items-center gap-2 text-sm text-gray-300 min-w-0">
-                                    <FolderIcon className="h-5 w-5 text-indigo-400 flex-shrink-0" />
-                                    <span className="font-medium text-white truncate max-w-xs" title={activeProject?.name || 'No Active Project'}>
-                                        {activeProject?.name || 'No Active Project'}
-                                    </span>
+                                </motion.div>
+                                <div>
+                                    <h1 className="text-2xl font-bold bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
+                                        CREATORS EDGE
+                                    </h1>
+                                    <span className="text-xs text-gray-400 uppercase tracking-widest hidden sm:block">Neural Creation Suite</span>
                                 </div>
                             </div>
-                            {currentUser && (
-                            <div id="user-menu-area" className="flex items-center space-x-2 sm:space-x-4 flex-shrink-0">
-                                <span className="text-sm font-medium hidden md:inline text-white">
-                                    {currentUser.name || currentUser.email.split('@')[0]}
-                                </span>
-                                <motion.button
-                                    whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
-                                    onClick={startTour}
-                                    className="p-2 rounded-full text-white hover:bg-white/20 hidden sm:block"
-                                    aria-label="Start tour"
-                                    title="Start Tour"
-                                >
-                                    <QuestionMarkCircleIcon className="h-6 w-6" />
-                                </motion.button>
-                                <motion.button
-                                    whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
-                                    onClick={handleProjectsModalToggle}
-                                    className="p-2 rounded-full text-white hover:bg-white/20"
-                                    aria-label="View projects"
-                                    title="Projects"
-                                >
-                                    <FolderIcon className="h-6 w-6" />
-                                </motion.button>
-                                <motion.button
-                                    whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
-                                    onClick={() => setIsHistoryOpen(true)}
-                                    className="p-2 rounded-full text-white hover:bg-white/20"
-                                    aria-label="View history"
-                                    title="History"
-                                >
-                                    <HistoryIcon className="h-6 w-6" />
-                                </motion.button>
-                                {analysisResult && (
-                                    <motion.button
-                                    whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
-                                    onClick={() => setIsExportHubOpen(true)}
-                                    className="p-2 rounded-full text-white hover:bg-white/20"
-                                    aria-label="Export results"
-                                    title="Export"
-                                    >
-                                    <ExportIcon className="h-6 w-6" />
-                                </motion.button>
+
+                            {/* User User Profile / Auth */}
+                            <div className="flex items-center gap-4">
+                                {currentUser ? (
+                                    <div className="flex items-center gap-4">
+                                        <div className="hidden md:flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-gray-800/50 to-gray-900/50 border border-cyan-500/30 rounded-lg">
+                                            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+                                            <span className="text-sm text-gray-300">SYSTEM ONLINE</span>
+                                        </div>
+                                        <div id="user-menu-area" className="flex items-center space-x-2">
+                                            <span className="text-sm font-medium hidden md:inline text-white mr-2">
+                                                {currentUser.name || currentUser.email.split('@')[0]}
+                                            </span>
+                                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-500 to-purple-600 flex items-center justify-center font-bold shadow-lg shadow-purple-500/30 ring-2 ring-white/10 cursor-pointer" onClick={handleLogout} title="Logout">
+                                                {currentUser.name ? currentUser.name.charAt(0).toUpperCase() : 'U'}
+                                            </div>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <button className="px-6 py-2 rounded-lg bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-semibold shadow-lg shadow-cyan-500/30 hover:scale-105 transition-all">
+                                        Initialize
+                                    </button>
                                 )}
-                                <motion.button
-                                    whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
-                                    onClick={handleLogout}
-                                    className="p-2 rounded-full text-white hover:bg-white/20"
-                                    aria-label="Logout"
-                                    title="Logout"
-                                >
-                                    <LogoutIcon className="h-6 w-6" />
-                                </motion.button>
                             </div>
-                            )}
-                        </motion.header>
-                        
-                            <AnimatePresence mode="wait">
-                            <motion.div
-                                key={analysisType}
-                                variants={pageVariants}
-                                initial="initial"
-                                animate="in"
-                                exit="out"
-                                transition={pageTransition}
-                            >
-                                {renderContent()}
-                            </motion.div>
-                            </AnimatePresence>
-                        
-                        </>
+                        </div>
+                    </motion.header>
+                )}
+
+                <div className="flex-grow overflow-hidden flex relative">
+                    {/* Sidebar - only show if authed */}
+                    {isAuthenticated && !isAuthChecking && (
+                        <div className="hidden md:block h-full relative z-20">
+                            <SidebarNav className="!h-full border-r border-white/5 bg-gray-900/40 backdrop-blur-xl" />
+                        </div>
                     )}
-                    </motion.div>
-                    </AnimatePresence>
-                </ErrorBoundary>
-            </main>
+
+                    {/* Mobile Menu */}
+                    {isAuthenticated && !isAuthChecking && (
+                        <AnimatePresence>
+                            {isMobileMenuOpen && (
+                                <div className="fixed inset-0 z-50 md:hidden bg-black/80 backdrop-blur-md" onClick={() => setIsMobileMenuOpen(false)}>
+                                    <SidebarNav onClose={() => setIsMobileMenuOpen(false)} />
+                                </div>
+                            )}
+                        </AnimatePresence>
+                    )}
+
+
+                    <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto overflow-x-hidden relative custom-scrollbar bg-black/40 backdrop-blur-sm">
+                        <ErrorBoundary>
+                            <AnimatePresence mode="wait">
+                                <motion.div
+                                    key={isAuthenticated ? 'authed' : 'unauthed'}
+                                    variants={pageVariants}
+                                    initial="initial"
+                                    animate="in"
+                                    exit="out"
+                                    transition={pageTransition}
+                                    className="h-full"
+                                >
+                                    {/* Mobile toggle */}
+                                    {isAuthenticated && !isAuthChecking && (
+                                        <button
+                                            className="md:hidden mb-4 p-2 text-gray-300 hover:text-white rounded-md bg-white/5"
+                                            onClick={() => setIsMobileMenuOpen(true)}
+                                        >
+                                            <Bars3Icon className="h-6 w-6" />
+                                        </button>
+                                    )}
+
+                                    {renderContent()}
+                                </motion.div>
+                            </AnimatePresence>
+                        </ErrorBoundary>
+                    </main>
+                </div>
+            </div>
+
+            <AnalysisHistoryModal />
+            <ExportHubModal isOpen={isExportHubOpen} onClose={() => setIsExportHubOpen(false)} />
+            <ProjectsModal />
         </div>
-        
-        <AnalysisHistoryModal />
-        <ExportHubModal isOpen={isExportHubOpen} onClose={() => setIsExportHubOpen(false)} />
-        <ProjectsModal />
-    </div>
-  );
+    );
+};
+
+export const App: React.FC = () => {
+    return (
+        <AppProvider>
+            <AppContent />
+        </AppProvider>
+    );
 };
