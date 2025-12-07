@@ -69,7 +69,8 @@ const limiter = rateLimit({
   max: 300,
   standardHeaders: true,
   legacyHeaders: false,
-  message: 'Too many requests from this IP, please try again after 15 minutes.'
+  message: 'Too many requests from this IP, please try again after 15 minutes.',
+  validate: { xForwardedForHeader: false } // Disable the validation error for proxy setup
 });
 
 app.use('/api', limiter);
