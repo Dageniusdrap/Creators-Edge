@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Creators Edge AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lamejs/1.2.1/lame.min.js"></script>
+  <script type="importmap">
+{
+  "imports": {
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.29.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "recharts": "https://aistudiocdn.com/recharts@^3.4.1",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "framer-motion": "https://aistudiocdn.com/framer-motion@^11.2.12",
+    "express": "https://aistudiocdn.com/express@^5.1.0",
+    "sqlite3": "https://aistudiocdn.com/sqlite3@^5.1.7",
+    "cors": "https://aistudiocdn.com/cors@^2.8.5",
+    "sqlite": "https://aistudiocdn.com/sqlite@^5.1.1",
+    "dotenv": "https://aistudiocdn.com/dotenv@^17.2.3",
+    "path": "https://aistudiocdn.com/path@^0.12.7",
+    "bcrypt": "https://aistudiocdn.com/bcrypt@^6.0.0",
+    "jsonwebtoken": "https://aistudiocdn.com/jsonwebtoken@^9.0.2",
+    "knex": "https://aistudiocdn.com/knex@^3.1.0",
+    "crypto": "https://aistudiocdn.com/crypto@^1.0.1",
+    "url": "https://aistudiocdn.com/url@^0.11.4",
+    "express-rate-limit": "https://aistudiocdn.com/express-rate-limit@^8.2.1"
+  }
+}
+</script>
+<style>
+  @keyframes gradient {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+  body {
+    background: linear-gradient(-45deg, #02042b, #4a0e89, #0081a7, #8e2d84);
+    background-size: 400% 400%;
+    animation: gradient 20s ease infinite;
+  }
+  .glass-card {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-radius: 1rem;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+  }
+  .dark .glass-card {
+      background: rgba(31, 41, 55, 0.25); /* gray-800 with alpha */
+  }
+  button, .btn {
+      transition: transform 0.1s ease-in-out, background-color 0.2s ease;
+  }
+  #bg-video {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    min-width: 100%;
+    min-height: 100%;
+    width: auto;
+    height: auto;
+    z-index: -1;
+    transform: translateX(-50%) translateY(-50%);
+    object-fit: cover;
+    display: none; /* Hidden by default */
+    opacity: 0;
+    transition: opacity 0.5s ease-in-out;
+  }
+
+  /* Custom Scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.1);
+  }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.4);
+  }
+
+  /* Custom Range Slider for AudioPlayer */
+  input[type=range] {
+    -webkit-appearance: none; /* Hides the slider so that custom slider can be made */
+    width: 100%; /* Specific width is required for Firefox. */
+    background: transparent; /* Otherwise white in Chrome */
+  }
+
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    height: 14px;
+    width: 14px;
+    border-radius: 50%;
+    background: #6366f1; /* Indigo-500 */
+    cursor: pointer;
+    margin-top: -5px; /* You need to specify a margin in Chrome, but in Firefox and IE it is automatic */
+    box-shadow: 0 0 4px rgba(0,0,0,0.3);
+    transition: transform 0.1s;
+  }
+  
+  input[type=range]::-webkit-slider-thumb:hover {
+      transform: scale(1.2);
+  }
+
+  input[type=range]::-webkit-slider-runnable-track {
+    width: 100%;
+    height: 4px;
+    cursor: pointer;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 2px;
+  }
+  
+  input[type=range]:focus {
+    outline: none;
+  }
+</style>
+<link rel="stylesheet" href="/index.css">
+</head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+  </body>
+</html>
