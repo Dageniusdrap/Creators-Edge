@@ -277,6 +277,15 @@ export const AppProvider: FC<{ children: ReactNode }> = ({ children }) => {
         setAuthToken(urlToken);
         // Remove token from URL to clean up
         window.history.replaceState({}, document.title, window.location.pathname);
+
+        // Immediately fetch user
+        try {
+          const { user } = await api.auth.getMe();
+          setCurrentUser(user);
+        } catch (error) {
+          console.error("Failed to fetch user with new token:", error);
+          removeAuthToken();
+        }
       }
 
       // Check for payment callback
