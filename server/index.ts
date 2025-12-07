@@ -82,20 +82,28 @@ app.get('/api/health', (req: Request, res: Response) => {
 app.use('/api', routes);
 
 // --- PRODUCTION SETUP ---
-// Serve static frontend files if in production mode
+// Serve static frontend files if in production mode AND dist exists
 if (isProduction) {
-  // Serve the 'dist' directory from the ROOT project folder
   const distPath = path.join(process.cwd(), 'dist');
-  console.log(`Production mode: Serving static files from ${distPath}`);
 
-  app.use(express.static(distPath));
+  // Check if dist exists (it might not on Railway if split deploy)
+  const fs = require('fs');
+  if (fs.existsSync(distPath)) {
+    console.log(`Production mode: Serving static files from ${distPath}`);
+    app.use(express.static(distPath));
 
-  // Handle React routing: return index.html for any unknown non-API paths
-  app.get('*', (req: Request, res: Response) => {
-    if (!req.path.startsWith('/api')) {
-      res.sendFile(path.join(distPath, 'index.html'));
-    }
-  });
+    // Handle React routing: return index.html for any unknown non-API paths
+    app.get('*', (req: Request, res: Response) => {
+      if (!req.path.startsWith('/api')) {
+        res.sendFile(path.join(distPath, 'index.html'));
+      }
+    });
+  } else {
+    console.log('Production mode: dist/ directory not found. Assuming split deployment (Frontend on Vercel).');
+    app.get('/', (req, res) => {
+      res.send('Backend is running! Frontend should be on Vercel.');
+    });
+  }
 }
 
 // Global Error Handler
