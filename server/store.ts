@@ -11,7 +11,10 @@ const isProduction = process.env.NODE_ENV === 'production';
 const config = (isProduction || process.env.DATABASE_URL)
   ? {
     client: 'pg',
-    connection: process.env.DATABASE_URL + (process.env.DATABASE_URL?.includes('localhost') ? '' : '?sslmode=require'),
+    connection: {
+      connectionString: process.env.DATABASE_URL,
+      ssl: { rejectUnauthorized: false }
+    },
     searchPath: ['public', 'public'],
   }
   : {
