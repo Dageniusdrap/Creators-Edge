@@ -13,6 +13,7 @@ export interface AuthRequest extends Request {
 
 export const authenticateToken = (req: Request, res: Response, next: NextFunction) => {
   const authHeader = req.headers['authorization'];
+  console.log('Auth Header received:', authHeader ? 'Freq present' : 'Missing', 'Value:', authHeader); // DEBUG LOG
   const token = authHeader && authHeader.split(' ')[1];
 
   if (token == null) return res.sendStatus(401);
