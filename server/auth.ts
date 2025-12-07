@@ -18,9 +18,10 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
 
   if (token == null) return res.sendStatus(401);
 
-  jwt.verify(token, process.env.JWT_SECRET || 'dev-secret-key-change-in-prod', (err: any, user: any) => {
+  jwt.verify(token, process.env.JWT_SECRET || 'dev-secret-key-change-in-prod', (err: any, decoded: any) => {
     if (err) return res.sendStatus(403);
-    (req as AuthRequest).user = user;
+    // Map JWT payload (userId) to expected User object structure (id)
+    (req as AuthRequest).user = { id: decoded.userId };
     next();
   });
 };
