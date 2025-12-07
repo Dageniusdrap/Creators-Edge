@@ -14,6 +14,9 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 const isProduction = process.env.NODE_ENV === 'production';
 
+// Trust proxy (Required for Railway/Vercel/Heroku)
+app.set('trust proxy', 1);
+
 // --- Security & Middleware ---
 app.use(helmet({
   contentSecurityPolicy: {
