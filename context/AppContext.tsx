@@ -64,7 +64,7 @@ interface AppContextType {
   scriptAudio: { url: string; blob: Blob } | null;
   setScriptAudio: React.Dispatch<React.SetStateAction<{ url: string; blob: Blob } | null>>;
   isGeneratingScriptAudio: boolean;
-  initialGenerationProps: { prompt: string; type: GenerationType, settings?: any } | null;
+  initialGenerationProps: { prompt: string; type: GenerationType, settings?: any, autoStart?: boolean } | null;
   retirementPlan: RetirementPlan | null;
   brandVoice: BrandVoice;
   setBrandVoice: (voice: BrandVoice) => Promise<void>;
@@ -107,7 +107,7 @@ interface AppContextType {
   setGeneratedVideo: React.Dispatch<React.SetStateAction<{ url: string, payload: any } | null>>;
   generatedSpeechUrl: string | null;
   setGeneratedSpeechUrl: React.Dispatch<React.SetStateAction<string | null>>;
-  setInitialGenerationProps: React.Dispatch<React.SetStateAction<{ prompt: string; type: GenerationType, settings?: any } | null>>;
+  setInitialGenerationProps: React.Dispatch<React.SetStateAction<{ prompt: string; type: GenerationType, settings?: any, autoStart?: boolean } | null>>;
 
 
   // Actions
@@ -412,7 +412,7 @@ export const AppProvider: FC<{ children: ReactNode }> = ({ children }) => {
   const [isGeneratingAudio, setIsGeneratingAudio] = useState(false);
   const [scriptAudio, setScriptAudio] = useState<{ url: string; blob: Blob } | null>(null);
   const [isGeneratingScriptAudio, setIsGeneratingScriptAudio] = useState(false);
-  const [initialGenerationProps, setInitialGenerationProps] = useState<{ prompt: string; type: GenerationType, settings?: any } | null>(null);
+  const [initialGenerationProps, setInitialGenerationProps] = useState<{ prompt: string; type: GenerationType, settings?: any, autoStart?: boolean } | null>(null);
   const [retirementPlan, setRetirementPlan] = useState<RetirementPlan | null>(null);
   const [generationCount, setGenerationCount] = useLocalStorage('generationCount', 0);
   const [generatedReframedContent, setGeneratedReframedContent] = useState<{ audience: string; summary: string; } | null>(null);
@@ -989,7 +989,7 @@ export const AppProvider: FC<{ children: ReactNode }> = ({ children }) => {
   }, [attemptGeneration, addNotification, scriptAudio, withApiErrorHandling, onSuccessfulGeneration]);
 
   const handleGenerateVideoFromScript = useCallback((script: string) => {
-    setInitialGenerationProps({ prompt: script, type: 'video' });
+    setInitialGenerationProps({ prompt: script, type: 'video', autoStart: true });
     handleTypeChange('contentGeneration'); // Navigate to Generation tab
   }, [handleTypeChange]);
 

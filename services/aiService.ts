@@ -275,8 +275,8 @@ export const generateSpeech = async (signal: AbortSignal, scripts: VoiceoverScri
 export const generateVideo = async (signal: AbortSignal, prompt: string, model: string, aspectRatio: string, resolution: string, frames: File[]) => {
     // We are routing this to our backend now (Fal.ai Hunyuan)
     // Note: frames functionality isn't implemented in the simple backend handler yet
-    const { video } = await api.post('/ai/generate/video', { prompt, aspectRatio });
-    return { url: video, payload: { prompt, aspectRatio } };
+    const { video } = await api.post('/ai/generate/video', { prompt, aspectRatio, model });
+    return { url: video, payload: { prompt, aspectRatio, model } };
 };
 
 export const extendVideo = async (signal: AbortSignal, prompt: string, previousOperation: any) => {

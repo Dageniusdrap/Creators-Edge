@@ -481,11 +481,11 @@ export interface PromptHistoryItem {
     timestamp: string;
     type: GenerationType; // Use the defined GenerationType
     link?: string;
-    imageModel?: 'imagen-4.0-generate-001' | 'gemini-2.5-flash-image';
+    imageModel?: 'imagen-4.0-generate-001' | 'gemini-2.5-flash-image' | 'fal-flux' | 'stability-core' | 'sd3' | 'recraft-v3';
     aspectRatio?: string;
     imageStylePresets?: string[];
     imageMimeType?: 'image/jpeg' | 'image/png';
-    videoModel?: 'veo-3.1-fast-generate-preview' | 'veo-3.1-generate-preview';
+    videoModel?: 'veo-3.1-fast-generate-preview' | 'veo-3.1-generate-preview' | 'hunyuan-video' | 'luma-ray' | 'runway-gen3' | 'kling';
     resolution?: '720p' | '1080p';
     videoDuration?: number;
     videoStylePresets?: string[];

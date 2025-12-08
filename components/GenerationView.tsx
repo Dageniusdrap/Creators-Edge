@@ -38,8 +38,8 @@ interface GenerationViewProps { }
 type ImageAspectRatio = '1:1' | '16:9' | '9:16' | '4:3' | '3:4';
 type VideoAspectRatio = '16:9' | '9:16';
 type VideoResolution = '720p' | '1080p';
-type ImageModel = 'imagen-4.0-generate-001' | 'gemini-2.5-flash-image' | 'fal-flux' | 'stability-core';
-type VideoModel = 'veo-3.1-fast-generate-preview' | 'veo-3.1-generate-preview';
+type ImageModel = 'imagen-4.0-generate-001' | 'gemini-2.5-flash-image' | 'fal-flux' | 'stability-core' | 'sd3' | 'recraft-v3';
+type VideoModel = 'veo-3.1-fast-generate-preview' | 'veo-3.1-generate-preview' | 'hunyuan-video' | 'luma-ray' | 'runway-gen3' | 'kling';
 type ImageMimeType = 'image/jpeg' | 'image/png';
 
 
@@ -329,7 +329,9 @@ const GenerationControls: React.FC<{
                     <OptionGroup title="Image Model">
                         <div className="grid grid-cols-2 gap-2">
                             <button onClick={() => props.setImageModel('fal-flux')} className={`p-2 text-sm rounded-md ${props.imageModel === 'fal-flux' ? 'bg-indigo-600 text-white' : 'bg-white/10 text-gray-300'}`}>Fal.ai (Flux)</button>
-                            <button onClick={() => props.setImageModel('stability-core')} className={`p-2 text-sm rounded-md ${props.imageModel === 'stability-core' ? 'bg-indigo-600 text-white' : 'bg-white/10 text-gray-300'}`}>Stability AI</button>
+                            <button onClick={() => props.setImageModel('stability-core')} className={`p-2 text-sm rounded-md ${props.imageModel === 'stability-core' ? 'bg-indigo-600 text-white' : 'bg-white/10 text-gray-300'}`}>Stability Ultra</button>
+                            <button onClick={() => props.setImageModel('sd3')} className={`p-2 text-sm rounded-md ${props.imageModel === 'sd3' ? 'bg-indigo-600 text-white' : 'bg-white/10 text-gray-300'}`}>Stable Diffusion 3</button>
+                            <button onClick={() => props.setImageModel('recraft-v3')} className={`p-2 text-sm rounded-md ${props.imageModel === 'recraft-v3' ? 'bg-indigo-600 text-white' : 'bg-white/10 text-gray-300'}`}>Recraft V3</button>
                             <button onClick={() => props.setImageModel('imagen-4.0-generate-001')} className={`p-2 text-sm rounded-md ${props.imageModel === 'imagen-4.0-generate-001' ? 'bg-indigo-600 text-white' : 'bg-white/10 text-gray-300'}`}>Imagen 4 (HD)</button>
                             <button onClick={() => props.setImageModel('gemini-2.5-flash-image')} className={`p-2 text-sm rounded-md ${props.imageModel === 'gemini-2.5-flash-image' ? 'bg-indigo-600 text-white' : 'bg-white/10 text-gray-300'}`}>Flash (Fast)</button>
                         </div>
@@ -379,15 +381,14 @@ const GenerationControls: React.FC<{
                                 </div>
                             )}
                             <OptionGroup title="Video Model">
-                                <select
-                                    value={props.videoModel}
-                                    onChange={(e) => props.setVideoModel(e.target.value as VideoModel)}
-                                    disabled={isMultiFrame}
-                                    className="w-full p-2 text-sm bg-white/5 text-white border border-white/20 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 disabled:opacity-50"
-                                >
-                                    <option value="veo-3.1-fast-generate-preview">Veo 3.1 Fast</option>
-                                    <option value="veo-3.1-generate-preview">Veo 3.1 HD</option>
-                                </select>
+                                <div className="grid grid-cols-2 gap-2">
+                                    <button onClick={() => props.setVideoModel('veo-3.1-fast-generate-preview')} disabled={isMultiFrame} className={`p-2 text-sm rounded-md ${props.videoModel === 'veo-3.1-fast-generate-preview' ? 'bg-indigo-600 text-white' : 'bg-white/10 text-gray-300'} disabled:opacity-50`}>Veo 3.1 Fast</button>
+                                    <button onClick={() => props.setVideoModel('veo-3.1-generate-preview')} className={`p-2 text-sm rounded-md ${props.videoModel === 'veo-3.1-generate-preview' ? 'bg-indigo-600 text-white' : 'bg-white/10 text-gray-300'}`}>Veo 3.1 HD</button>
+                                    <button onClick={() => props.setVideoModel('hunyuan-video')} disabled={isMultiFrame} className={`p-2 text-sm rounded-md ${props.videoModel === 'hunyuan-video' ? 'bg-indigo-600 text-white' : 'bg-white/10 text-gray-300'} disabled:opacity-50`}>Hunyuan Video</button>
+                                    <button onClick={() => props.setVideoModel('luma-ray')} disabled={isMultiFrame} className={`p-2 text-sm rounded-md ${props.videoModel === 'luma-ray' ? 'bg-indigo-600 text-white' : 'bg-white/10 text-gray-300'} disabled:opacity-50`}>Luma Ray</button>
+                                    <button onClick={() => props.setVideoModel('runway-gen3')} disabled={isMultiFrame} className={`p-2 text-sm rounded-md ${props.videoModel === 'runway-gen3' ? 'bg-indigo-600 text-white' : 'bg-white/10 text-gray-300'} disabled:opacity-50`}>Runway Gen-3</button>
+                                    <button onClick={() => props.setVideoModel('kling')} disabled={isMultiFrame} className={`p-2 text-sm rounded-md ${props.videoModel === 'kling' ? 'bg-indigo-600 text-white' : 'bg-white/10 text-gray-300'} disabled:opacity-50`}>Kling</button>
+                                </div>
                             </OptionGroup>
                             <div className="grid grid-cols-2 gap-4">
                                 <OptionGroup title="Aspect Ratio">
@@ -845,6 +846,11 @@ export const GenerationView: React.FC<GenerationViewProps> = () => {
             // Ensure any previous local generation results are cleared when new props arrive
             resetLocalResults();
             onInitialPropsConsumed();
+
+            if (initialGenerationProps.autoStart) {
+                // Pass the prompt and type directly to ensure we use the correct values immediately
+                handleGenerate(initialGenerationProps.prompt, initialGenerationProps.type);
+            }
         }
     }, [initialGenerationProps, onInitialPropsConsumed]);
 
@@ -942,24 +948,27 @@ export const GenerationView: React.FC<GenerationViewProps> = () => {
         }
     };
 
-    const handleGenerate = async () => {
-        if (!prompt.trim() && activeTab !== 'speech') {
+    const handleGenerate = async (manualPrompt?: string, manualTab?: GenerationType) => {
+        const promptToUse = manualPrompt || prompt;
+        const tabToUse = manualTab || activeTab;
+
+        if (!promptToUse.trim() && tabToUse !== 'speech') {
             setError('Please enter a prompt.');
             return;
         }
-        if (activeTab === 'speech' && voiceoverScripts.every(vs => !vs.script.trim()) && !prompt.trim()) {
+        if (tabToUse === 'speech' && voiceoverScripts.every(vs => !vs.script.trim()) && !promptToUse.trim()) {
             setError('Please enter some text for the speech generation.');
             return;
         }
 
         if (!attemptGeneration()) return;
 
-        if (activeTab === 'video') {
+        if (tabToUse === 'video') {
             const generateAction = async () => {
                 resetLocalResults(); // Reset local results before starting new generation
                 setIsLoading(true);
                 try {
-                    const videoPrompt = `${prompt} ${videoStylePresets.join(', ')}`;
+                    const videoPrompt = `${promptToUse} ${videoStylePresets.join(', ')}`;
                     const frameFiles = referenceFrames.map(f => f.file);
                     const videoResult = await withApiErrorHandling(aiService.generateVideo, videoPrompt, videoModel, videoAspectRatio, resolution, frameFiles);
                     setGeneratedVideo(videoResult); // Use global setter
@@ -972,7 +981,7 @@ export const GenerationView: React.FC<GenerationViewProps> = () => {
                             }
                         }
                     }
-                    addToHistory({ type: 'video', prompt, videoModel, aspectRatio: videoAspectRatio, resolution, videoStylePresets, referenceFrameCount: referenceFrames.length, voiceoverScripts });
+                    addToHistory({ type: 'video', prompt: promptToUse, videoModel, aspectRatio: videoAspectRatio, resolution, videoStylePresets, referenceFrameCount: referenceFrames.length, voiceoverScripts });
                     onSuccessfulGeneration();
                 } catch (err: any) {
                     if (err.name === 'AbortError') {
@@ -998,14 +1007,15 @@ export const GenerationView: React.FC<GenerationViewProps> = () => {
             return;
         }
 
+
         resetLocalResults(); // Reset local results before starting new generation
         setIsLoading(true);
 
         try {
-            switch (activeTab) {
+            switch (tabToUse) {
                 case 'script': {
                     let scriptText = '';
-                    await withApiErrorHandling(aiService.generateViralScript, prompt, link, brandVoice, (chunk) => {
+                    await withApiErrorHandling(aiService.generateViralScript, promptToUse, link, brandVoice, (chunk) => {
                         scriptText += chunk;
                         setViralScriptResult(parseViralScript(scriptText)); // Use global setter
                     });
@@ -1032,22 +1042,22 @@ export const GenerationView: React.FC<GenerationViewProps> = () => {
                         }
                     }
 
-                    addToHistory({ type: 'script', prompt, link });
+                    addToHistory({ type: 'script', prompt: promptToUse, link });
                     onSuccessfulGeneration();
                     break;
                 }
                 case 'image': {
-                    const imagePrompt = `${prompt} ${imageStylePresets.join(', ')}`;
+                    const imagePrompt = `${promptToUse} ${imageStylePresets.join(', ')}`;
                     const imageUrl = await withApiErrorHandling(aiService.generateImage, imagePrompt, imageModel, imageAspectRatio, imageMimeType, negativePrompt);
                     setGeneratedImage(imageUrl); // Use global setter
-                    addToHistory({ type: 'image', prompt, imageModel, aspectRatio: imageAspectRatio, imageStylePresets, imageMimeType });
+                    addToHistory({ type: 'image', prompt: promptToUse, imageModel, aspectRatio: imageAspectRatio, imageStylePresets, imageMimeType });
                     onSuccessfulGeneration();
                     break;
                 }
                 case 'speech': {
                     const scriptsToProcess = voiceoverScripts.filter(vs => vs.script.trim());
-                    if (scriptsToProcess.length === 0 && prompt.trim()) {
-                        scriptsToProcess.push({ ...voiceoverScripts[0], script: prompt.trim() });
+                    if (scriptsToProcess.length === 0 && promptToUse.trim()) {
+                        scriptsToProcess.push({ ...voiceoverScripts[0], script: promptToUse.trim() });
                     }
                     if (scriptsToProcess.length === 0) {
                         throw new Error("No text provided for speech generation.");
@@ -1058,7 +1068,7 @@ export const GenerationView: React.FC<GenerationViewProps> = () => {
                         const audioBlob = pcmToMp3Blob(new Int16Array(decode(speechBase64).buffer), 24000, 1);
                         setGeneratedSpeechUrl(URL.createObjectURL(audioBlob)); // Use global setter
                     }
-                    addToHistory({ type: 'speech', prompt, voiceoverScripts: scriptsToProcess });
+                    addToHistory({ type: 'speech', prompt: promptToUse, voiceoverScripts: scriptsToProcess });
                     onSuccessfulGeneration();
                     break;
                 }
@@ -1365,7 +1375,7 @@ export const GenerationView: React.FC<GenerationViewProps> = () => {
 
                 <button
                     id="generate-button"
-                    onClick={handleGenerate}
+                    onClick={() => handleGenerate()}
                     disabled={isLoading || !prompt.trim()}
                     className="w-full flex items-center justify-center p-4 text-lg font-bold rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 transition-transform active:scale-95"
                 >
