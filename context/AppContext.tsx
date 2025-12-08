@@ -1142,28 +1142,37 @@ export const AppProvider: FC<{ children: ReactNode }> = ({ children }) => {
 
   const handleLoadAsset = useCallback((asset: ProjectAsset) => {
     handleCancel(true); // Clear any ongoing operations silently
-    clearResults(); // Clear displayed results
 
+    // Switch to the correct view first, which will clear previous results via handleTypeChange logic
     if (asset.type in toolConfig) { // If it's an analysis type
       setAnalysisType(asset.type as AnalysisType);
-      setAnalysisResult(asset.data as AnalysisResult);
+      setTimeout(() => {
+        setAnalysisResult(asset.data as AnalysisResult);
+      }, 0);
     } else { // If it's a generation type
       handleTypeChange('contentGeneration'); // Navigate to content generation view
-      // This is a simplified load. For a full implementation,
-      // you'd populate all generation view states.
-      if (asset.type === 'script') {
-        setInitialGenerationProps({ prompt: (asset.data as ViralScript).script, type: 'script' });
-      } else if (asset.type === 'image') {
-        setInitialGenerationProps({ prompt: asset.name, type: 'image', settings: { imageUrl: asset.data as string } });
-      } else if (asset.type === 'video') {
-        setInitialGenerationProps({ prompt: asset.name, type: 'video', settings: { videoUrl: asset.data as string } });
-      } else if (asset.type === 'speech') {
-        setInitialGenerationProps({ prompt: asset.name, type: 'speech', settings: { speechUrl: asset.data as string } });
-      }
+
+      // Use setTimeout to allow render cycle to clear previous state before setting new state
+      setTimeout(() => {
+        if (asset.type === 'script') {
+          setInitialGenerationProps({ prompt: (asset.data as ViralScript).script, type: 'script' });
+          setViralScriptResult(asset.data as ViralScript);
+        } else if (asset.type === 'image') {
+          setInitialGenerationProps({ prompt: asset.name, type: 'image', settings: { imageUrl: asset.data as string } });
+          setGeneratedImage(asset.data as string);
+        } else if (asset.type === 'video') {
+          setInitialGenerationProps({ prompt: asset.name, type: 'video', settings: { videoUrl: asset.data as string } });
+          // Reconstruct payload if possible, or provide minimal payload for display
+          setGeneratedVideo({ url: asset.data as string, payload: { prompt: asset.name, videoModel: 'unknown' } });
+        } else if (asset.type === 'speech') {
+          setInitialGenerationProps({ prompt: asset.name, type: 'speech', settings: { speechUrl: asset.data as string } });
+          setGeneratedSpeechUrl(asset.data as string);
+        }
+      }, 0);
     }
     addNotification(`Loaded "${asset.name}" from project.`, 'info');
     setIsProjectsModalOpen(false); // Close modal after loading
-  }, [handleCancel, clearResults, addNotification]);
+  }, [handleCancel, handleTypeChange, addNotification]);
 
   const handleDeleteProject = useCallback(async (id: string) => {
     if (window.confirm('Are you sure you want to delete this project? This action cannot be undone.')) {
