@@ -2,6 +2,7 @@
 import * as fal from "@fal-ai/serverless-client";
 import axios from 'axios';
 import FormData from 'form-data';
+import * as gemini from './gemini';
 
 // --- Environment Variables ---
 const FAL_KEY = process.env.FAL_KEY;
@@ -145,6 +146,15 @@ export const generateImageMultiProvider = async (prompt: string, aspectRatio: st
     } catch (e: any) {
         console.warn("Hugging Face failed.", e.message);
         lastError = e;
+        // 4. Try Google Imagen (Last Resort)
+        try {
+            console.log("Attempting generation with Google Imagen...");
+            // Use the existing function in gemini.ts we wrote earlier
+            return await gemini.generateImage(prompt, aspectRatio);
+        } catch (e: any) {
+            console.warn("Google Imagen failed.", e.message);
+            lastError = e;
+        }
     }
 
     throw new Error(`All image generation providers failed. Last error: ${lastError?.message || 'Unknown'}`);
