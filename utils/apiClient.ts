@@ -65,13 +65,20 @@ async function request<T>(endpoint: string, options: RequestOptions = {}): Promi
     return {} as T;
   }
 
-  const data = await response.json();
-
-  if (!response.ok) {
-    throw new Error(data.error || 'API request failed');
+  // Check if response is JSON
+  const contentType = response.headers.get("content-type");
+  if (contentType && contentType.includes("application/json")) {
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error || 'API request failed');
+    }
+    return data as T;
+  } else {
+    // Handle non-JSON response (likely an error page from Vercel/Railway)
+    const text = await response.text();
+    console.error(`Received non-JSON response from API: ${response.status} ${response.statusText}`, text);
+    throw new Error(`API returned an unexpected response (${response.status} ${response.statusText}). It might be down or misconfigured.`);
   }
-
-  return data as T;
 }
 
 export const api = {
