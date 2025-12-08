@@ -178,3 +178,40 @@ export const generateImageMultiProvider = async (prompt: string, aspectRatio: st
 
     throw new Error(`All image generation providers failed. Last error: ${(lastError as any)?.message || 'Unknown'}`);
 };
+
+// --- Video Generation ---
+
+export const generateVideo = async (prompt: string, aspectRatio: string = "16:9"): Promise<string> => {
+    if (!FAL_KEY) throw new Error("Video generation requires FAL_KEY (Fal.ai).");
+
+    console.log("Generating video with Fal.ai (Hunyuan)...");
+
+    // Map aspect ratio
+    let aspect = "16:9";
+    if (aspectRatio === "9:16") aspect = "9:16";
+
+    try {
+        const result: any = await fal.subscribe("fal-ai/hunyuan-video", {
+            input: {
+                prompt: prompt,
+                aspect_ratio: aspect,
+                num_frames: 85, // ~3-4 seconds usually for this model
+                num_inference_steps: 30
+            },
+            logs: true,
+            onQueueUpdate: (update: any) => {
+                if (update.status === 'IN_PROGRESS') {
+                    console.log("[Fal.ai Video] Generating...");
+                }
+            },
+        });
+
+        if (result.video && result.video.url) {
+            return result.video.url;
+        }
+        throw new Error("No video returned from Fal.ai");
+    } catch (e: any) {
+        console.error("Fal Video Error:", e);
+        throw e;
+    }
+};

@@ -334,3 +334,14 @@ export const generateImage = async (req: Request, res: Response) => {
         res.status(500).json({ error: error.message || "Failed to generate image" });
     }
 };
+
+export const generateVideo = async (req: Request, res: Response) => {
+    try {
+        const { prompt, aspectRatio } = req.body;
+        const video = await imageGen.generateVideo(prompt, aspectRatio);
+        res.json({ video });
+    } catch (error: any) {
+        console.error("Video Gen Error:", error);
+        res.status(500).json({ error: error.message || "Failed to generate video" });
+    }
+};

@@ -1,75 +1,69 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { KeyIcon } from './icons/KeyIcon';
 import { CheckIcon } from './icons/CheckIcon';
 import { ExclamationTriangleIcon } from './icons/ExclamationTriangleIcon';
 
 export const ApiKeySetup: React.FC = () => {
-    const [hasKey, setHasKey] = useState<boolean | null>(null);
-    const [isChecking, setIsChecking] = useState(true);
-
-    const checkApiKey = async () => {
-        setIsChecking(true);
-        if ((window as any).aistudio) {
-            const keyStatus = await (window as any).aistudio.hasSelectedApiKey();
-            setHasKey(keyStatus);
-        } else {
-            setHasKey(false); // Fallback if aistudio is not available
-        }
-        setIsChecking(false);
-    };
-
-    useEffect(() => {
-        checkApiKey();
-    }, []);
-
-    const handleSelectKey = async () => {
-        if ((window as any).aistudio) {
-            await (window as any).aistudio.openSelectKey();
-            // Re-check the status after the dialog is closed
-            checkApiKey();
-        }
-    };
+    // We now assume keys are managed via Backend/Railway Environment Variables
+    // This view is purely informational now.
 
     return (
         <div className="glass-card p-6 w-full max-w-2xl mx-auto">
             <h2 className="text-xl font-bold mb-2 text-white flex items-center">
                 <KeyIcon className="h-6 w-6 mr-3" />
-                API Key Management
+                API Key Configuration
             </h2>
             <p className="text-sm text-gray-300 mb-6">
-                Manage your Google AI Studio API key for premium features like Veo video generation. Your key is stored securely and is not visible to this application.
+                This application uses secure backend keys for AI features. Keys are managed in your deployment environment (e.g., Railway).
             </p>
 
-            <div className="bg-black/20 p-6 rounded-lg text-center">
-                <h3 className="text-lg font-semibold text-white mb-2">Current Status</h3>
-                
-                {isChecking ? (
-                    <div className="h-8 w-8 mx-auto border-2 border-dashed rounded-full animate-spin border-indigo-400"></div>
-                ) : hasKey ? (
-                    <div className="flex items-center justify-center text-green-400">
-                        <CheckIcon className="h-6 w-6 mr-2" />
-                        <span className="font-semibold">API Key is configured</span>
-                    </div>
-                ) : (
-                    <div className="flex items-center justify-center text-yellow-400">
-                        <ExclamationTriangleIcon className="h-6 w-6 mr-2" />
-                        <span className="font-semibold">No API Key selected</span>
-                    </div>
-                )}
-                
-                <p className="text-xs text-gray-400 mt-4 max-w-md mx-auto">
-                    Premium features require your own API key with billing enabled.
-                    <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:underline ml-1">
-                        Learn more
-                    </a>
-                </p>
+            <div className="bg-black/20 p-6 rounded-lg text-left space-y-4">
+                <h3 className="text-lg font-semibold text-white mb-2">Required Environment Variables</h3>
 
-                <button
-                    onClick={handleSelectKey}
-                    className="mt-6 bg-indigo-600 text-white font-bold py-3 px-6 rounded-md hover:bg-indigo-700 transition-colors"
-                >
-                    {hasKey ? 'Change API Key' : 'Select API Key'}
-                </button>
+                <div className="space-y-3">
+                    <div className="flex items-start">
+                        <div className="p-1 bg-green-500/20 rounded mr-3 mt-1">
+                            <CheckIcon className="h-4 w-4 text-green-400" />
+                        </div>
+                        <div>
+                            <p className="text-white font-semibold text-sm">Google Gemini</p>
+                            <p className="text-xs text-gray-400">Required for Analysis, Text Generation, and Imagen Fallback.</p>
+                            <code className="text-xs bg-black/40 px-1 py-0.5 rounded text-indigo-300">GEMINI_API_KEY</code>
+                        </div>
+                    </div>
+
+                    <div className="flex items-start">
+                        <div className="p-1 bg-blue-500/20 rounded mr-3 mt-1">
+                            <CheckIcon className="h-4 w-4 text-blue-400" />
+                        </div>
+                        <div>
+                            <p className="text-white font-semibold text-sm">Fal.ai (Recommended)</p>
+                            <p className="text-xs text-gray-400">Required for Ultra-Fast Image & Video Generation (Linear/Video).</p>
+                            <code className="text-xs bg-black/40 px-1 py-0.5 rounded text-indigo-300">FAL_KEY</code>
+                        </div>
+                    </div>
+
+                    <div className="flex items-start">
+                        <div className="p-1 bg-purple-500/20 rounded mr-3 mt-1">
+                            <CheckIcon className="h-4 w-4 text-purple-400" />
+                        </div>
+                        <div>
+                            <p className="text-white font-semibold text-sm">Stability AI</p>
+                            <p className="text-xs text-gray-400">Alternative for high-quality Image Generation.</p>
+                            <code className="text-xs bg-black/40 px-1 py-0.5 rounded text-indigo-300">STABILITY_API_KEY</code>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="mt-6 pt-4 border-t border-white/10">
+                    <div className="flex items-center text-yellow-500 mb-2">
+                        <ExclamationTriangleIcon className="h-5 w-5 mr-2" />
+                        <span className="font-semibold text-sm">How to Configure</span>
+                    </div>
+                    <p className="text-xs text-gray-400 leading-relaxed">
+                        To enable these features, go to your <strong>Railway Project Dashboard</strong> → <strong>Variables</strong> and add the keys listed above. The application will automatically detect them after a redeploy.
+                    </p>
+                </div>
             </div>
         </div>
     );

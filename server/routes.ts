@@ -77,7 +77,8 @@ router.post('/ai/refine', authenticateToken, aiHandlers.refineTranscriptLine);
 router.post('/ai/generate/retirement-plan', authenticateToken, aiHandlers.generateRetirementPlan);
 router.post('/ai/summarize-live-session', authenticateToken, aiHandlers.summarizeLiveSession);
 
-// Image Generation
+// Image & Video
 router.post('/ai/generate/image', authenticateToken, aiHandlers.generateImage);
+router.post('/ai/generate/video', authenticateToken, aiHandlers.generateVideo);
 
 export default router;
