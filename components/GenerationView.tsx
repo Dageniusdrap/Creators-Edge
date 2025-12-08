@@ -859,8 +859,8 @@ export const GenerationView: React.FC<GenerationViewProps> = () => {
         setPromptHistory(prev => [newItem, ...(prev || []).slice(0, 99)]); // Keep last 100
     };
 
-    const handleSelectFromHistory = (item: PromptHistoryItem) => {
-        setActiveTab(item.type);
+    const handleSelectFromHistory = (item: PromptHistoryItem, overrideType?: GenerationType) => {
+        setActiveTab(overrideType || item.type);
         setPrompt(item.prompt);
         // Restore all settings from history
         if (item.link) setLink(item.link);

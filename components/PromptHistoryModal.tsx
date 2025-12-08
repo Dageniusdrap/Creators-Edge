@@ -3,7 +3,7 @@ import { XIcon } from './icons/XIcon';
 import { TrashIcon } from './icons/TrashIcon';
 import { SearchIcon } from './icons/SearchIcon';
 import { ClockIcon } from './icons/ClockIcon';
-import type { VoiceoverScript, PromptHistoryItem } from '../types';
+import type { VoiceoverScript, PromptHistoryItem, GenerationType } from '../types';
 import { MagicWandIcon } from './icons/MagicWandIcon';
 import { ImageIcon } from './icons/ImageIcon';
 import { VideoCameraIcon } from './icons/VideoCameraIcon';
@@ -17,7 +17,7 @@ export type { PromptHistoryItem };
 interface PromptHistoryModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSelect: (item: PromptHistoryItem) => void;
+  onSelect: (item: PromptHistoryItem, overrideType?: GenerationType) => void;
 }
 
 const modelLabels: Record<string, string> = {
@@ -28,27 +28,27 @@ const modelLabels: Record<string, string> = {
 };
 
 const typeDetails: Record<string, { icon: React.FC<any>, color: string, label: string }> = {
-    script: { icon: MagicWandIcon, color: 'text-purple-400', label: 'Viral Script' },
-    image: { icon: ImageIcon, color: 'text-blue-400', label: 'Image' },
-    video: { icon: VideoCameraIcon, color: 'text-red-400', label: 'Video' },
-    speech: { icon: SpeakerWaveIcon, color: 'text-green-400', label: 'Speech' },
+  script: { icon: MagicWandIcon, color: 'text-purple-400', label: 'Viral Script' },
+  image: { icon: ImageIcon, color: 'text-blue-400', label: 'Image' },
+  video: { icon: VideoCameraIcon, color: 'text-red-400', label: 'Video' },
+  speech: { icon: SpeakerWaveIcon, color: 'text-green-400', label: 'Speech' },
 };
 
 const listVariants = {
-    visible: { transition: { staggerChildren: 0.07 } },
-    hidden: {},
+  visible: { transition: { staggerChildren: 0.07 } },
+  hidden: {},
 };
 
 const itemVariants = {
-    visible: { opacity: 1, y: 0 },
-    hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0 },
+  hidden: { opacity: 0, y: 20 },
 };
 
 
 const HistoryTag: React.FC<{ children: React.ReactNode, className?: string }> = ({ children, className }) => (
-    <span className={`px-2 py-0.5 text-xs font-medium bg-white/10 text-gray-300 rounded-full ${className}`}>
-        {children}
-    </span>
+  <span className={`px-2 py-0.5 text-xs font-medium bg-white/10 text-gray-300 rounded-full ${className}`}>
+    {children}
+  </span>
 );
 
 export const PromptHistoryModal: React.FC<PromptHistoryModalProps> = ({ isOpen, onClose, onSelect }) => {
@@ -58,15 +58,15 @@ export const PromptHistoryModal: React.FC<PromptHistoryModalProps> = ({ isOpen, 
   const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
 
   useEffect(() => {
-      const handleKeyDown = (e: KeyboardEvent) => {
-          if (e.key === 'Escape') {
-              onClose();
-          }
-      };
-      if (isOpen) {
-          window.addEventListener('keydown', handleKeyDown);
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
       }
-      return () => window.removeEventListener('keydown', handleKeyDown);
+    };
+    if (isOpen) {
+      window.addEventListener('keydown', handleKeyDown);
+    }
+    return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
 
   const safeHistory = history || [];
@@ -81,7 +81,7 @@ export const PromptHistoryModal: React.FC<PromptHistoryModalProps> = ({ isOpen, 
     });
 
     if (filter !== 'all') {
-        items = items.filter(item => item.type === filter);
+      items = items.filter(item => item.type === filter);
     }
     if (!searchQuery) return items;
     const lowercasedQuery = searchQuery.toLowerCase();
@@ -92,7 +92,7 @@ export const PromptHistoryModal: React.FC<PromptHistoryModalProps> = ({ isOpen, 
   }, [safeHistory, searchQuery, filter, sortOrder]);
 
   if (!isOpen) return null;
-  
+
   const formatDate = (isoString: string) => {
     return new Date(isoString).toLocaleString(undefined, {
       month: 'short',
@@ -106,7 +106,7 @@ export const PromptHistoryModal: React.FC<PromptHistoryModalProps> = ({ isOpen, 
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.95 }}
@@ -116,15 +116,15 @@ export const PromptHistoryModal: React.FC<PromptHistoryModalProps> = ({ isOpen, 
         <div className="flex justify-between items-center p-4 border-b border-white/10 flex-shrink-0">
           <h2 className="text-lg font-semibold text-white">Generation History</h2>
           <div className="flex items-center space-x-4">
-              {safeHistory.length > 0 && (
-                  <button onClick={handleClearPromptHistory} className="flex items-center text-sm text-red-400 hover:text-red-300 font-medium">
-                      <TrashIcon className="h-4 w-4 mr-1" />
-                      Clear All
-                  </button>
-              )}
-              <button onClick={onClose} className="text-gray-400 hover:text-white">
-                  <XIcon className="h-6 w-6" />
+            {safeHistory.length > 0 && (
+              <button onClick={handleClearPromptHistory} className="flex items-center text-sm text-red-400 hover:text-red-300 font-medium">
+                <TrashIcon className="h-4 w-4 mr-1" />
+                Clear All
               </button>
+            )}
+            <button onClick={onClose} className="text-gray-400 hover:text-white">
+              <XIcon className="h-6 w-6" />
+            </button>
           </div>
         </div>
 
@@ -143,32 +143,32 @@ export const PromptHistoryModal: React.FC<PromptHistoryModalProps> = ({ isOpen, 
           </div>
           <div className="flex justify-between items-center mt-3">
             <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => setFilter('all')}
+                className={`px-3 py-1 text-xs font-medium rounded-full ${filter === 'all' ? 'bg-indigo-500 text-white' : 'bg-white/10 text-gray-300'}`}
+              >
+                All
+              </button>
+              {availableFilters.map(type => (
                 <button
-                    onClick={() => setFilter('all')}
-                    className={`px-3 py-1 text-xs font-medium rounded-full ${filter === 'all' ? 'bg-indigo-500 text-white' : 'bg-white/10 text-gray-300'}`}
+                  key={type}
+                  onClick={() => setFilter(type)}
+                  className={`px-3 py-1 text-xs font-medium rounded-full capitalize ${filter === type ? 'bg-indigo-500 text-white' : 'bg-white/10 text-gray-300'}`}
                 >
-                    All
+                  {type}
                 </button>
-                {availableFilters.map(type => (
-                    <button
-                        key={type}
-                        onClick={() => setFilter(type)}
-                        className={`px-3 py-1 text-xs font-medium rounded-full capitalize ${filter === type ? 'bg-indigo-500 text-white' : 'bg-white/10 text-gray-300'}`}
-                    >
-                        {type}
-                    </button>
-                ))}
+              ))}
             </div>
-             <div className="relative">
-                <select
-                    value={sortOrder}
-                    onChange={(e) => setSortOrder(e.target.value as 'newest' | 'oldest')}
-                    className="text-xs font-medium appearance-none bg-white/10 text-gray-300 border-none rounded-full py-1 pl-3 pr-8 focus:ring-2 focus:ring-indigo-500"
-                >
-                    <option value="newest">Newest First</option>
-                    <option value="oldest">Oldest First</option>
-                </select>
-                <ChevronDownIcon className="h-4 w-4 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400" />
+            <div className="relative">
+              <select
+                value={sortOrder}
+                onChange={(e) => setSortOrder(e.target.value as 'newest' | 'oldest')}
+                className="text-xs font-medium appearance-none bg-white/10 text-gray-300 border-none rounded-full py-1 pl-3 pr-8 focus:ring-2 focus:ring-indigo-500"
+              >
+                <option value="newest">Newest First</option>
+                <option value="oldest">Oldest First</option>
+              </select>
+              <ChevronDownIcon className="h-4 w-4 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400" />
             </div>
           </div>
         </div>
@@ -192,42 +192,60 @@ export const PromptHistoryModal: React.FC<PromptHistoryModalProps> = ({ isOpen, 
                 const iconColor = typeDetails[item.type].color;
                 const typeLabel = typeDetails[item.type].label;
                 return (
-                    <motion.div
-                      key={item.timestamp}
-                      variants={itemVariants}
-                      className="bg-white/5 rounded-lg border border-white/10 flex flex-col overflow-hidden group"
-                    >
-                        <div className="p-3 flex justify-between items-center bg-white/5 border-b border-white/10">
-                           <div className="flex items-center space-x-2">
-                                <DetailsIcon className={`h-5 w-5 ${iconColor}`} />
-                                <span className="text-sm font-semibold text-gray-200">{typeLabel}</span>
-                            </div>
-                            <span className="text-xs text-gray-500">{formatDate(item.timestamp)}</span>
-                        </div>
-                        <div className="p-4 flex-grow cursor-pointer" onClick={() => onSelect(item)}>
-                            <p className="text-sm text-gray-200 font-medium group-hover:text-indigo-300 transition-colors">"{item.prompt}"</p>
-                        </div>
-                        <div className="p-3 bg-black/20 border-t border-white/10 flex justify-between items-center">
-                            <div className="flex flex-wrap gap-2 items-center">
-                                {item.imageModel && <HistoryTag>{modelLabels[item.imageModel]}</HistoryTag>}
-                                {item.videoModel && <HistoryTag>{modelLabels[item.videoModel]}</HistoryTag>}
-                                {item.voice && <HistoryTag>{item.voice}</HistoryTag>}
-                                {item.aspectRatio && <HistoryTag>{item.aspectRatio}</HistoryTag>}
-                                {item.resolution && <HistoryTag>{item.resolution}</HistoryTag>}
-                                {item.videoDuration && <HistoryTag>{item.videoDuration}s</HistoryTag>}
-                                {item.referenceFrameCount && item.referenceFrameCount > 0 && <HistoryTag>{item.referenceFrameCount} Ref Img</HistoryTag>}
-                                {item.imageStylePresets && item.imageStylePresets.length > 0 && <HistoryTag className="truncate max-w-[200px]">{item.imageStylePresets.join(', ')}</HistoryTag>}
-                                {item.videoStylePresets && item.videoStylePresets.length > 0 && <HistoryTag className="truncate max-w-[200px]">{item.videoStylePresets.join(', ')}</HistoryTag>}
-                            </div>
-                            <button 
-                                onClick={(e) => { e.stopPropagation(); handleDeletePromptHistoryItem(item.timestamp); }} 
-                                className="p-1 text-gray-400 hover:text-red-400"
-                                title="Delete item"
-                            >
-                                <TrashIcon className="h-4 w-4" />
-                            </button>
-                        </div>
-                    </motion.div>
+                  <motion.div
+                    key={item.timestamp}
+                    variants={itemVariants}
+                    className="bg-white/5 rounded-lg border border-white/10 flex flex-col overflow-hidden group"
+                  >
+                    <div className="p-3 flex justify-between items-center bg-white/5 border-b border-white/10">
+                      <div className="flex items-center space-x-2">
+                        <DetailsIcon className={`h-5 w-5 ${iconColor}`} />
+                        <span className="text-sm font-semibold text-gray-200">{typeLabel}</span>
+                      </div>
+                      <span className="text-xs text-gray-500">{formatDate(item.timestamp)}</span>
+                    </div>
+                    <div className="p-4 flex-grow cursor-pointer" onClick={() => onSelect(item)}>
+                      <p className="text-sm text-gray-200 font-medium group-hover:text-indigo-300 transition-colors">"{item.prompt}"</p>
+                    </div>
+                    <div className="p-3 bg-black/20 border-t border-white/10 flex justify-between items-center">
+                      <div className="flex flex-wrap gap-2 items-center">
+                        {/* Action Buttons */}
+                        <button
+                          onClick={(e) => { e.stopPropagation(); onSelect(item, 'script'); }}
+                          className="px-2 py-1 text-xs font-medium text-purple-300 bg-purple-900/30 rounded hover:bg-purple-900/50 border border-purple-500/30"
+                          title="Edit as Viral Script"
+                        >
+                          <MagicWandIcon className="h-3 w-3 inline mr-1" /> Script
+                        </button>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); onSelect(item, 'video'); }}
+                          className="px-2 py-1 text-xs font-medium text-red-300 bg-red-900/30 rounded hover:bg-red-900/50 border border-red-500/30"
+                          title="Use for Video Generation"
+                        >
+                          <VideoCameraIcon className="h-3 w-3 inline mr-1" /> Video
+                        </button>
+
+                        {item.imageModel && <HistoryTag>{modelLabels[item.imageModel]}</HistoryTag>}
+                        {item.videoModel && <HistoryTag>{modelLabels[item.videoModel]}</HistoryTag>}
+                        {item.voice && <HistoryTag>{item.voice}</HistoryTag>}
+                        {item.aspectRatio && <HistoryTag>{item.aspectRatio}</HistoryTag>}
+                        {item.resolution && <HistoryTag>{item.resolution}</HistoryTag>}
+                        {item.videoDuration && <HistoryTag>{item.videoDuration}s</HistoryTag>}
+                        {item.referenceFrameCount && item.referenceFrameCount > 0 && <HistoryTag>{item.referenceFrameCount} Ref Img</HistoryTag>}
+                        {item.imageStylePresets && item.imageStylePresets.length > 0 && <HistoryTag className="truncate max-w-[200px]">{item.imageStylePresets.join(', ')}</HistoryTag>}
+                        {item.videoStylePresets && item.videoStylePresets.length > 0 && <HistoryTag className="truncate max-w-[200px]">{item.videoStylePresets.join(', ')}</HistoryTag>}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleDeletePromptHistoryItem(item.timestamp); }}
+                          className="p-1 text-gray-400 hover:text-red-400"
+                          title="Delete item"
+                        >
+                          <TrashIcon className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </motion.div>
                 );
               })}
             </motion.div>
