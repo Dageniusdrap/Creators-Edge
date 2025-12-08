@@ -701,6 +701,9 @@ export const AppProvider: FC<{ children: ReactNode }> = ({ children }) => {
   }, []);
 
   const attemptGeneration = useCallback(() => {
+    // Owner role bypasses limits
+    if (currentUser?.role === 'owner') return true;
+
     if (currentUser?.plan === 'Free' && generationCount >= MAX_FREE_GENERATIONS) {
       setOverlayContent(<UpgradeModal isOpen={true} onClose={() => setOverlayContent(null)} onUpgrade={() => { setAnalysisType('pricing'); setOverlayContent(null); }} />);
       return false;
