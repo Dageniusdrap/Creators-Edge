@@ -28,55 +28,117 @@ const fileToBase64 = (file: File): Promise<{ base64: string, type: string }> => 
     });
 };
 
+const uploadToR2 = async (file: File): Promise<string> => {
+    const { url, publicUrl } = await api.post('/storage/upload-url', {
+        fileName: file.name,
+        fileType: file.type
+    });
+
+    await fetch(url, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': file.type,
+        },
+        body: file,
+    });
+
+    return publicUrl;
+};
+
 const getFilePayload = async (file?: File) => {
     if (!file) return undefined;
+
+    // Use R2 for files larger than 5MB or always for video/audio to be safe
+    const isLargeFile = file.size > 5 * 1024 * 1024;
+    const isMedia = file.type.startsWith('video/') || file.type.startsWith('audio/');
+
+    if (isLargeFile || isMedia) {
+        const fileUrl = await uploadToR2(file);
+        return { fileUrl, type: file.type };
+    }
+
     const { base64, type } = await fileToBase64(file);
-    return { base64, type }; // Matches server expectation
+    return { base64, type };
 };
 
 // --- Analysis Functions ---
 
 export const analyzeSalesCall = async (signal: AbortSignal, script: string, brandVoice: BrandVoice, file?: File): Promise<AnalysisResult> => {
     const filePayload = await getFilePayload(file);
-    return api.post('/ai/sales-call', { script, brandVoice, file: filePayload });
+    // Determine if payload is url or base64
+    const body: any = { script, brandVoice };
+    if (filePayload) {
+        if ('fileUrl' in filePayload) body.fileUrl = filePayload.fileUrl;
+        else body.file = filePayload;
+    }
+    return api.post('/ai/sales-call', body);
 };
 
 export const analyzeSocialMediaContent = async (signal: AbortSignal, script: string, description: string, link: string, brandVoice: BrandVoice, file?: File): Promise<AnalysisResult> => {
     const filePayload = await getFilePayload(file);
-    return api.post('/ai/social-media', { script, description, link, brandVoice, file: filePayload });
+    const body: any = { script, description, link, brandVoice };
+    if (filePayload) {
+        if ('fileUrl' in filePayload) body.fileUrl = filePayload.fileUrl;
+        else body.file = filePayload;
+    }
+    return api.post('/ai/social-media', body);
 };
 
 export const analyzeProductAd = async (signal: AbortSignal, script: string, description: string, link: string, brandVoice: BrandVoice, file?: File): Promise<AnalysisResult> => {
     const filePayload = await getFilePayload(file);
-    return api.post('/ai/product-ad', { script, description, link, brandVoice, file: filePayload });
+    const body: any = { script, description, link, brandVoice };
+    if (filePayload) {
+        if ('fileUrl' in filePayload) body.fileUrl = filePayload.fileUrl;
+        else body.file = filePayload;
+    }
+    return api.post('/ai/product-ad', body);
 };
 
 export const analyzeVideoContent = async (signal: AbortSignal, file: File): Promise<AnalysisResult> => {
     const filePayload = await getFilePayload(file);
     if (!filePayload) throw new Error("File is required");
-    return api.post('/ai/video-analysis', { file: filePayload });
+    const body: any = {};
+    if ('fileUrl' in filePayload) body.fileUrl = filePayload.fileUrl;
+    else body.file = filePayload;
+    return api.post('/ai/video-analysis', body);
 };
 
 export const transcribeMedia = async (signal: AbortSignal, file: File): Promise<AnalysisResult> => {
     const filePayload = await getFilePayload(file);
     if (!filePayload) throw new Error("File is required");
-    return api.post('/ai/transcription', { file: filePayload });
+    const body: any = {};
+    if ('fileUrl' in filePayload) body.fileUrl = filePayload.fileUrl;
+    else body.file = filePayload;
+    return api.post('/ai/transcription', body);
 };
 
 export const analyzeDocument = async (signal: AbortSignal, script: string, description: string, file?: File): Promise<AnalysisResult> => {
     const filePayload = await getFilePayload(file);
-    return api.post('/ai/document', { script, description, file: filePayload });
+    const body: any = { script, description };
+    if (filePayload) {
+        if ('fileUrl' in filePayload) body.fileUrl = filePayload.fileUrl;
+        else body.file = filePayload;
+    }
+    return api.post('/ai/document', body);
 };
 
 export const analyzeFinancialReport = async (signal: AbortSignal, script: string, description: string, file?: File): Promise<AnalysisResult> => {
     const filePayload = await getFilePayload(file);
-    return api.post('/ai/financial-report', { script, description, file: filePayload });
+    const body: any = { script, description };
+    if (filePayload) {
+        if ('fileUrl' in filePayload) body.fileUrl = filePayload.fileUrl;
+        else body.file = filePayload;
+    }
+    return api.post('/ai/financial-report', body);
 };
 
 export const analyzeLiveStream = async (signal: AbortSignal, file: File): Promise<AnalysisResult> => {
     const filePayload = await getFilePayload(file);
     if (!filePayload) throw new Error("File is required");
-    return api.post('/ai/live-stream', { file: filePayload });
+    const body: any = {};
+    if ('fileUrl' in filePayload) body.fileUrl = filePayload.fileUrl;
+    else body.file = filePayload;
+    return api.post('/ai/live-stream', body);
 };
 
 type ABTestInput = { script: string; file?: File };
@@ -97,13 +159,21 @@ export const scoreBrandVoiceAlignment = async (signal: AbortSignal, text: string
 
 export const analyzeAndRepurposeContent = async (signal: AbortSignal, script: string, file?: File): Promise<AnalysisResult> => {
     const filePayload = await getFilePayload(file);
-    return api.post('/ai/repurpose', { script, file: filePayload });
+    const body: any = { script };
+    if (filePayload) {
+        if ('fileUrl' in filePayload) body.fileUrl = filePayload.fileUrl;
+        else body.file = filePayload;
+    }
+    return api.post('/ai/repurpose', body);
 };
 
 export const analyzeThumbnail = async (signal: AbortSignal, file: File): Promise<AnalysisResult> => {
     const filePayload = await getFilePayload(file);
     if (!filePayload) throw new Error("File is required");
-    return api.post('/ai/thumbnail', { file: filePayload });
+    const body: any = {};
+    if ('fileUrl' in filePayload) body.fileUrl = filePayload.fileUrl;
+    else body.file = filePayload;
+    return api.post('/ai/thumbnail', body);
 };
 
 export const generateMonetizationAssets = async (signal: AbortSignal, result: AnalysisResult, brandVoice: BrandVoice): Promise<MonetizationAssets> => {
@@ -182,8 +252,9 @@ export const generateRetirementPlan = async (signal: AbortSignal, inputs: any): 
 };
 
 export const generateImage = async (signal: AbortSignal, prompt: string, model: string, aspectRatio: string, mimeType: string, negativePrompt?: string): Promise<string> => {
-    // Placeholder
-    throw new Error("Image generation not available in this version.");
+    // We are routing this to our backend now
+    const { image } = await api.post('/ai/generate/image', { prompt, aspectRatio });
+    return image;
 };
 
 export const editImage = async (signal: AbortSignal, base64ImageData: string, mimeType: string, prompt: string): Promise<string> => {

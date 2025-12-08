@@ -38,6 +38,9 @@ router.delete('/projects/:projectId/assets/:assetId', authenticateToken, handler
 // --- Social Routes ---
 router.post('/social/youtube', authenticateToken, handlers.analyzeYoutube);
 
+// --- Storage Routes ---
+router.post('/storage/upload-url', authenticateToken, handlers.getUploadUrl);
+
 // --- Payment Routes ---
 router.post('/payment/checkout', authenticateToken, handlers.createCheckout);
 router.post('/payment/verify', authenticateToken, handlers.verifyPayment);
@@ -73,5 +76,8 @@ router.post('/ai/brainstorm', authenticateToken, aiHandlers.brainstormVideoIdeas
 router.post('/ai/refine', authenticateToken, aiHandlers.refineTranscriptLine);
 router.post('/ai/generate/retirement-plan', authenticateToken, aiHandlers.generateRetirementPlan);
 router.post('/ai/summarize-live-session', authenticateToken, aiHandlers.summarizeLiveSession);
+
+// Image Generation
+router.post('/ai/generate/image', authenticateToken, aiHandlers.generateImage);
 
 export default router;

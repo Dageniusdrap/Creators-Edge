@@ -53,8 +53,11 @@ export const analyzeProductAd = async (req: Request, res: Response) => {
 export const analyzeVideoContent = async (req: Request, res: Response) => {
     try {
         const file = getFile(req.body);
-        if (!file) throw new Error("File is required for video analysis");
-        const result = await gemini.analyzeVideoContent(file.base64, file.type);
+        const { fileUrl } = req.body;
+
+        if (!file && !fileUrl) throw new Error("File or File URL is required for video analysis");
+
+        const result = await gemini.analyzeVideoContent(file?.base64 || '', file?.type || '', fileUrl);
         res.json(result);
     } catch (error: any) {
         console.error("Analysis Error:", error);
@@ -317,5 +320,15 @@ export const summarizeLiveSession = async (req: AuthRequest, res: Response) => {
     } catch (error: any) {
         console.error("Live session summary error:", error);
         res.status(500).json({ error: "Failed to summarize live session" });
+    }
+};
+export const generateImage = async (req: Request, res: Response) => {
+    try {
+        const { prompt, aspectRatio } = req.body;
+        const image = await gemini.generateImage(prompt, aspectRatio);
+        res.json({ image });
+    } catch (error: any) {
+        console.error("Image Gen Error:", error);
+        res.status(500).json({ error: error.message || "Failed to generate image" });
     }
 };

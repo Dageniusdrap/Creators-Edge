@@ -86,7 +86,16 @@ We are going to deploy your app in 3 simple phases.
 2.  Find: `"destination": "https://creators-edge-production.up.railway.app/api/$1"`
 3.  Replace the URL with your **Real Backend URL** from Railway.
     *(Keep the `/api/$1` at the end!)*.
-4.  Save and push to GitHub:
+### 4. Storage (Cloudflare R2) - **REQUIRED for Video Analysis**
+To support large video uploads (bypassing Railway's 50MB limit), you must set up Cloudflare R2:
+- `R2_ACCOUNT_ID`: Your Cloudflare Account ID.
+- `R2_ACCESS_KEY_ID`: R2 Access Key ID.
+- `R2_SECRET_ACCESS_KEY`: R2 Secret Access Key.
+- `R2_BUCKET_NAME`: The name of your R2 bucket.
+- `R2_PUBLIC_DOMAIN`: The public domain for your bucket (e.g., `pub-xxxxxxxx.r2.dev` or `assets.yourdomain.com`).
+
+### 5. Deployment
+1. **Push to GitHub**:
     ```bash
     git add vercel.json
     git commit -m "Link frontend to backend"

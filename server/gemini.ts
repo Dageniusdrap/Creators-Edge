@@ -1,5 +1,6 @@
 
-import { GoogleGenAI, Type } from "@google/genai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
+import { Type } from "@google/genai"; // Keep if Type is needed from here, otherwise remove or adjust
 import {
     getSalesCallPrompt,
     getSocialMediaPrompt,
@@ -90,23 +91,26 @@ const callGeminiJson = async (prompt: string, schema: any, fileBase64?: string, 
     const apiKey = getApiKey();
     if (!apiKey) throw new Error("Server API Key missing");
 
-    const ai = new GoogleGenAI({ apiKey });
+    const ai = new GoogleGenerativeAI(apiKey);
     const parts: any[] = [{ text: prompt }];
 
     if (fileBase64 && fileType) {
         parts.unshift(base64ToGenerativePart(fileBase64, fileType));
     }
 
-    const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
-        contents: { parts },
-        config: {
+    const model = ai.getGenerativeModel({
+        model: 'gemini-2.0-flash',
+        generationConfig: {
             responseMimeType: 'application/json',
             responseSchema: schema,
-        },
+        }
     });
 
-    const rawText = response.text || "{}";
+    const response = await model.generateContent({
+        contents: [{ role: 'user', parts }]
+    });
+
+    const rawText = response.response.text() || "{}";
     const jsonText = cleanJsonString(rawText);
 
     try {
@@ -120,12 +124,10 @@ const callGeminiJson = async (prompt: string, schema: any, fileBase64?: string, 
 const callGeminiText = async (prompt: string) => {
     const apiKey = getApiKey();
     if (!apiKey) throw new Error("Server API Key missing");
-    const ai = new GoogleGenAI({ apiKey });
-    const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
-        contents: prompt,
-    });
-    return response.text || '';
+    const ai = new GoogleGenerativeAI(apiKey);
+    const model = ai.getGenerativeModel({ model: 'gemini-2.0-flash' });
+    const response = await model.generateContent(prompt);
+    return response.response.text();
 };
 
 export const generateJson = async (prompt: string, schema: any, fileBase64?: string, fileType?: string) => {
@@ -151,8 +153,89 @@ export const analyzeProductAd = async (script: string, description: string, link
     return callGeminiJson(prompt, productAdFullSchema, fileBase64, fileType);
 };
 
-export const analyzeVideoContent = async (fileBase64: string, fileType: string) => {
+import { GoogleAIFileManager } from "@google/generative-ai/server";
+import fs from 'fs';
+import os from 'os';
+import path from 'path';
+import https from 'https';
+
+// ... (keep existing imports)
+
+const uploadFileToGemini = async (fileUrl: string, mimeType: string): Promise<string> => {
+    const apiKey = getApiKey();
+    if (!apiKey) throw new Error("Server API Key missing");
+
+    // Download file to temp
+    const tempFilePath = path.join(os.tmpdir(), `gemini_upload_${Date.now()}`);
+    const fileManager = new GoogleAIFileManager(apiKey);
+
+    return new Promise((resolve, reject) => {
+        const file = fs.createWriteStream(tempFilePath);
+        https.get(fileUrl, (response) => {
+            response.pipe(file);
+            file.on('finish', async () => {
+                file.close();
+                try {
+                    const uploadResult = await fileManager.uploadFile(tempFilePath, {
+                        mimeType,
+                        displayName: "Video Upload",
+                    });
+                    fs.unlinkSync(tempFilePath); // Clean up
+                    resolve(uploadResult.file.uri);
+                } catch (err) {
+                    fs.unlinkSync(tempFilePath);
+                    reject(err);
+                }
+            });
+        }).on('error', (err) => {
+            fs.unlinkSync(tempFilePath);
+            reject(err);
+        });
+    });
+};
+
+export const analyzeVideoContent = async (fileBase64: string, fileType: string, fileUrl?: string) => {
     const prompt = getVideoAnalysisPrompt();
+
+    if (fileUrl) {
+        // If fileUrl is provided, upload via File API
+        // Note: calling gemini with fileUri requires slightly different call structure than base64
+        // We need to implement a specialized call or modify callGeminiJson to handle fileUri
+
+        const fileUri = await uploadFileToGemini(fileUrl, fileType || 'video/mp4');
+
+        // Custom call for fileUri since callGeminiJson is base64 oriented
+        const apiKey = getApiKey();
+        const ai = new GoogleGenerativeAI(apiKey);
+
+        // Re-implement generation with fileUri
+        const parts = [
+            { text: prompt },
+            { fileData: { mimeType: fileType || 'video/mp4', fileUri: fileUri } }
+        ];
+
+        const model = ai.getGenerativeModel({
+            model: 'gemini-1.5-pro',
+            generationConfig: {
+                responseMimeType: 'application/json',
+                responseSchema: videoAnalysisFullSchema as any,
+            }
+        });
+
+        const response = await model.generateContent({
+            contents: [{ role: 'user', parts }],
+        });
+
+        const rawText = response.response.text() || "{}";
+        const jsonText = cleanJsonString(rawText);
+        try {
+            return JSON.parse(jsonText);
+        } catch (e) {
+            console.error("Failed to parse JSON from Gemini:", rawText);
+            throw new Error("AI returned invalid JSON format.");
+        }
+    }
+
     return callGeminiJson(prompt, videoAnalysisFullSchema, fileBase64, fileType);
 };
 
@@ -180,7 +263,7 @@ export const analyzeABTest = async (contentA: { script: string, fileBase64?: str
     const apiKey = getApiKey();
     if (!apiKey) throw new Error("Server API Key missing");
 
-    const ai = new GoogleGenAI({ apiKey });
+    const ai = new GoogleGenerativeAI(apiKey);
     const parts: any[] = [];
 
     if (contentA.fileBase64 && contentA.fileType) {
@@ -196,16 +279,19 @@ export const analyzeABTest = async (contentA: { script: string, fileBase64?: str
     );
     parts.push({ text: textPrompt });
 
-    const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
-        contents: { parts },
-        config: {
+    const model = ai.getGenerativeModel({
+        model: 'gemini-2.0-flash',
+        generationConfig: {
             responseMimeType: 'application/json',
-            responseSchema: abTestFullSchema,
-        },
+            responseSchema: abTestFullSchema as any,
+        }
     });
 
-    const rawText = response.text || "{}";
+    const response = await model.generateContent({
+        contents: [{ role: 'user', parts }]
+    });
+
+    const rawText = response.response.text() || "{}";
     const jsonText = cleanJsonString(rawText);
     return JSON.parse(jsonText);
 };
@@ -294,16 +380,17 @@ export const generateSocialPostFromScript = async (script: string, brandVoice: B
 export const brainstormVideoIdeas = async (keyword: string) => {
     const apiKey = getApiKey();
     if (!apiKey) throw new Error("Server API Key missing");
-    const ai = new GoogleGenAI({ apiKey });
+    const ai = new GoogleGenerativeAI(apiKey);
     const prompt = getBrainstormIdeasPrompt(keyword);
 
-    const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
-        contents: prompt,
-        config: { responseMimeType: 'application/json' }
+    const model = ai.getGenerativeModel({
+        model: 'gemini-2.0-flash',
+        generationConfig: { responseMimeType: 'application/json' }
     });
 
-    const rawText = response.text || "[]";
+    const response = await model.generateContent(prompt);
+
+    const rawText = response.response.text() || "[]";
     const jsonText = cleanJsonString(rawText);
     try {
         return JSON.parse(jsonText);
@@ -325,4 +412,41 @@ export const generateRetirementPlan = async (inputs: any) => {
 export const summarizeLiveSessionText = async (transcript: string) => {
     const prompt = getLiveSessionDebriefPrompt(transcript);
     return await generateText(prompt);
+};
+
+// --- Image Generation (Imagen 3) ---
+
+export const generateImage = async (prompt: string, aspectRatio: string = "1:1"): Promise<string> => {
+    const apiKey = getApiKey();
+    if (!apiKey) throw new Error("Server API Key missing");
+
+    // Standard Gemini Client
+    const ai = new GoogleGenerativeAI(apiKey);
+
+    // Correct usage based on SDK: ai.getGenerativeModel(...)
+    const model = ai.getGenerativeModel({ model: "imagen-3.0-generate-001" });
+
+    try {
+        const response = await model.generateContent({
+            contents: [{ role: 'user', parts: [{ text: prompt }] }],
+        });
+
+        // If inlineData is present:
+        const image = response.response?.candidates?.[0]?.content?.parts?.[0]?.inlineData;
+
+        if (image && image.data) {
+            return `data:${image.mimeType};base64,${image.data}`;
+        }
+
+        throw new Error("No image data returned from AI");
+
+    } catch (e: any) {
+        console.error("Image Generation Error:", e);
+        throw new Error("Image generation failed. Your API key may not support Imagen yet.");
+    }
+};
+
+// Placeholder for Edit Image
+export const editImage = async (base64ImageData: string, mimeType: string, prompt: string): Promise<string> => {
+    throw new Error("Image editing is momentarily unavailable. Please generate a new image instead.");
 };

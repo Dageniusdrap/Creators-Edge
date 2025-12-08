@@ -3,6 +3,7 @@ import { db } from './store';
 import { hashPassword, comparePassword, generateToken } from './utils';
 import { AuthRequest } from './auth';
 import crypto from 'crypto';
+import { generateUploadUrl } from './r2';
 
 // --- Type Definitions ---
 interface UserResponse {
@@ -376,5 +377,19 @@ export const deleteAsset = async (req: AuthRequest, res: Response) => {
   } catch (error) {
     console.error('Delete Asset error:', error);
     res.status(500).json({ error: 'Failed to delete asset' });
+  }
+};
+
+export const getUploadUrl = async (req: Request, res: Response) => {
+  try {
+    const { fileName, fileType } = req.body;
+    if (!fileName || !fileType) {
+      return res.status(400).json({ error: 'fileName and fileType are required' });
+    }
+    const result = await generateUploadUrl(fileName, fileType);
+    res.json(result);
+  } catch (error: any) {
+    console.error("Upload URL Error:", error);
+    res.status(500).json({ error: error.message || "Failed to generate upload URL" });
   }
 };
