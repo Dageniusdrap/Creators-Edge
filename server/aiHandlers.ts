@@ -322,10 +322,12 @@ export const summarizeLiveSession = async (req: AuthRequest, res: Response) => {
         res.status(500).json({ error: "Failed to summarize live session" });
     }
 };
+import * as imageGen from './imageGen';
+
 export const generateImage = async (req: Request, res: Response) => {
     try {
         const { prompt, aspectRatio } = req.body;
-        const image = await gemini.generateImage(prompt, aspectRatio);
+        const image = await imageGen.generateImageMultiProvider(prompt, aspectRatio);
         res.json({ image });
     } catch (error: any) {
         console.error("Image Gen Error:", error);
