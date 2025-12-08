@@ -31,14 +31,14 @@ import { ClipboardIcon } from './icons/ClipboardIcon';
 import { DownloadIcon } from './icons/DownloadIcon';
 
 
-interface GenerationViewProps {}
+interface GenerationViewProps { }
 
 // Removed duplicate GenerationType definition
 
 type ImageAspectRatio = '1:1' | '16:9' | '9:16' | '4:3' | '3:4';
 type VideoAspectRatio = '16:9' | '9:16';
 type VideoResolution = '720p' | '1080p';
-type ImageModel = 'imagen-4.0-generate-001' | 'gemini-2.5-flash-image';
+type ImageModel = 'imagen-4.0-generate-001' | 'gemini-2.5-flash-image' | 'fal-flux' | 'stability-core';
 type VideoModel = 'veo-3.1-fast-generate-preview' | 'veo-3.1-generate-preview';
 type ImageMimeType = 'image/jpeg' | 'image/png';
 
@@ -95,8 +95,8 @@ const GenerationControls: React.FC<{
     setWatermark: (w: string) => void;
     voiceoverScripts: VoiceoverScript[];
     setVoiceoverScripts: (vs: VoiceoverScript[]) => void;
-    withApiErrorHandling: <R>(apiCall: (signal: AbortSignal, ...args: any[]) => Promise<R>, ...args: any[]) => Promise<R>; 
-    abortControllerRef: React.MutableRefObject<AbortController>; 
+    withApiErrorHandling: <R>(apiCall: (signal: AbortSignal, ...args: any[]) => Promise<R>, ...args: any[]) => Promise<R>;
+    abortControllerRef: React.MutableRefObject<AbortController>;
 }> = (props) => {
     const { attemptGeneration, onSuccessfulGeneration, addNotification } = useAppContext();
     const [brainstormKeyword, setBrainstormKeyword] = useState('');
@@ -122,15 +122,15 @@ const GenerationControls: React.FC<{
             setIsBrainstorming(false);
         }
     };
-    
+
     const IMAGE_STYLE_PRESETS = ['Photorealistic', 'Cinematic', 'Anime', 'Fantasy', 'Digital Art', '3D Render', 'Watercolor', 'Sketch', 'Pixel Art', 'Low Poly', 'Cyberpunk', 'Steampunk', 'Vintage', 'Minimalist'];
     const VIDEO_STYLE_PRESETS = ['Cinematic', 'Drone Shot', 'Time-lapse', 'Black and White', 'Hyper-realistic', 'Animated', 'Documentary', 'Vaporwave', 'Claymation'];
     const PROFESSIONAL_VOICES = ['Kore', 'Puck', 'Charon', 'Fenrir', 'Zephyr'];
     const VOICE_STYLES = ['Default', 'Cheerful', 'Animated', 'Energetic', 'Calm', 'Authoritative', 'Serious', 'Whispering', 'Storyteller', 'News Anchor'];
-    
+
     const toggleStylePreset = (
-        preset: string, 
-        currentStyles: string[], 
+        preset: string,
+        currentStyles: string[],
         setter: (styles: string[]) => void
     ) => {
         const newStyles = currentStyles.includes(preset)
@@ -158,7 +158,7 @@ const GenerationControls: React.FC<{
             vs.id === id ? { ...vs, ...updated } : vs
         ));
     };
-    
+
     const handleAddReferenceFrame = (file: File | null) => {
         if (file && props.referenceFrames.length < 3) {
             const newFrame = { file, preview: URL.createObjectURL(file) };
@@ -181,17 +181,17 @@ const GenerationControls: React.FC<{
             if (count >= 3) return `Reference Asset ${index + 1}`;
             return '';
         };
-    
+
         return (
             <div>
-                 <p className="text-xs text-gray-400 mb-2">
+                <p className="text-xs text-gray-400 mb-2">
                     <strong>1 image:</strong> starting frame. <strong>2 images:</strong> start & end frames. <strong>3 images:</strong> reference assets.
                 </p>
-                 <div className="grid grid-cols-3 gap-2 mb-2">
+                <div className="grid grid-cols-3 gap-2 mb-2">
                     {props.referenceFrames.map((frame, index) => (
                         <div key={index} className="relative h-20">
-                            <img src={frame.preview} alt={`Reference ${index+1}`} className="w-full h-full object-cover rounded-md" />
-                             <div className="absolute bottom-0 left-0 right-0 p-1 bg-black/50 text-white text-center text-[10px] font-semibold">{getFrameLabel(index, props.referenceFrames.length)}</div>
+                            <img src={frame.preview} alt={`Reference ${index + 1}`} className="w-full h-full object-cover rounded-md" />
+                            <div className="absolute bottom-0 left-0 right-0 p-1 bg-black/50 text-white text-center text-[10px] font-semibold">{getFrameLabel(index, props.referenceFrames.length)}</div>
                             <button
                                 onClick={() => handleRemoveReferenceFrame(index)}
                                 className="absolute -top-2 -right-2 p-2 bg-red-500 rounded-full text-white shadow-md hover:bg-red-600 transition-colors z-10"
@@ -203,7 +203,7 @@ const GenerationControls: React.FC<{
                     ))}
                 </div>
                 {props.referenceFrames.length < 3 && (
-                    <button 
+                    <button
                         className="w-full flex flex-col items-center justify-center px-6 py-4 border-2 border-white/20 border-dashed rounded-md cursor-pointer hover:border-indigo-500"
                         onClick={() => inputRef.current?.click()}
                     >
@@ -217,7 +217,7 @@ const GenerationControls: React.FC<{
     };
 
     const isMultiFrame = props.referenceFrames.length >= 3;
-    
+
     useEffect(() => {
         if (isMultiFrame) {
             props.setVideoModel('veo-3.1-generate-preview');
@@ -248,14 +248,14 @@ const GenerationControls: React.FC<{
                     onChange={(e) => props.setPrompt(e.target.value)}
                     className="block w-full px-3 py-2 bg-white/5 text-white border border-white/20 rounded-md shadow-sm"
                     placeholder={
-                        props.activeTab === 'speech' 
-                        ? "Enter text for a single speaker, or add speakers below for multi-speaker audio..."
-                        : "e.g., A futuristic cityscape at sunset, synthwave style..."
+                        props.activeTab === 'speech'
+                            ? "Enter text for a single speaker, or add speakers below for multi-speaker audio..."
+                            : "e.g., A futuristic cityscape at sunset, synthwave style..."
                     }
                 />
             </OptionGroup>
-            
-             {props.activeTab === 'script' && (
+
+            {props.activeTab === 'script' && (
                 <>
                     <OptionGroup title="Inspiration Link (Optional)">
                         <div className="relative">
@@ -277,38 +277,38 @@ const GenerationControls: React.FC<{
                     <OptionGroup title="Need Inspiration?">
                         <div className="flex gap-2">
                             <input
-                            type="text"
-                            value={brainstormKeyword}
-                            onChange={(e) => setBrainstormKeyword(e.target.value)}
-                            onKeyDown={(e) => e.key === 'Enter' && handleBrainstorm()}
-                            placeholder="Enter a keyword, e.g., 'productivity'"
-                            className="flex-grow p-2 bg-white/5 text-white border border-white/20 rounded-md"
+                                type="text"
+                                value={brainstormKeyword}
+                                onChange={(e) => setBrainstormKeyword(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && handleBrainstorm()}
+                                placeholder="Enter a keyword, e.g., 'productivity'"
+                                className="flex-grow p-2 bg-white/5 text-white border border-white/20 rounded-md"
                             />
                             <button
-                            onClick={handleBrainstorm}
-                            disabled={isBrainstorming}
-                            className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 disabled:bg-indigo-400"
+                                onClick={handleBrainstorm}
+                                disabled={isBrainstorming}
+                                className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 disabled:bg-indigo-400"
                             >
-                            {isBrainstorming ? '...' : 'Brainstorm'}
+                                {isBrainstorming ? '...' : 'Brainstorm'}
                             </button>
                         </div>
                         {brainstormError && <p className="text-xs text-red-400 mt-2">{brainstormError}</p>}
                         {brainstormIdeas.length > 0 && (
                             <div className="mt-4 space-y-2 max-h-48 overflow-y-auto">
-                            <h5 className="text-sm font-semibold text-gray-300">AI-Generated Ideas:</h5>
-                            {brainstormIdeas.map((idea, index) => {
-                                const [title, concept] = idea.split(': ');
-                                return (
-                                <button
-                                    key={index}
-                                    onClick={() => props.setPrompt(`Title: ${title}\n\nConcept: ${concept}\n\nPlease expand this into a full viral video script.`)}
-                                    className="w-full text-left p-2 bg-black/20 rounded-md hover:bg-black/40"
-                                >
-                                    <p className="font-semibold text-sm text-indigo-300">{title}</p>
-                                    <p className="text-xs text-gray-400">{concept}</p>
-                                </button>
-                                );
-                            })}
+                                <h5 className="text-sm font-semibold text-gray-300">AI-Generated Ideas:</h5>
+                                {brainstormIdeas.map((idea, index) => {
+                                    const [title, concept] = idea.split(': ');
+                                    return (
+                                        <button
+                                            key={index}
+                                            onClick={() => props.setPrompt(`Title: ${title}\n\nConcept: ${concept}\n\nPlease expand this into a full viral video script.`)}
+                                            className="w-full text-left p-2 bg-black/20 rounded-md hover:bg-black/40"
+                                        >
+                                            <p className="font-semibold text-sm text-indigo-300">{title}</p>
+                                            <p className="text-xs text-gray-400">{concept}</p>
+                                        </button>
+                                    );
+                                })}
                             </div>
                         )}
                     </OptionGroup>
@@ -328,8 +328,10 @@ const GenerationControls: React.FC<{
                     </OptionGroup>
                     <OptionGroup title="Image Model">
                         <div className="grid grid-cols-2 gap-2">
-                           <button onClick={() => props.setImageModel('imagen-4.0-generate-001')} className={`p-2 text-sm rounded-md ${props.imageModel === 'imagen-4.0-generate-001' ? 'bg-indigo-600 text-white' : 'bg-white/10 text-gray-300'}`}>Imagen 4.0 (HD)</button>
-                           <button onClick={() => props.setImageModel('gemini-2.5-flash-image')} className={`p-2 text-sm rounded-md ${props.imageModel === 'gemini-2.5-flash-image' ? 'bg-indigo-600 text-white' : 'bg-white/10 text-gray-300'}`}>Nano Banana (Fast)</button>
+                            <button onClick={() => props.setImageModel('fal-flux')} className={`p-2 text-sm rounded-md ${props.imageModel === 'fal-flux' ? 'bg-indigo-600 text-white' : 'bg-white/10 text-gray-300'}`}>Fal.ai (Flux)</button>
+                            <button onClick={() => props.setImageModel('stability-core')} className={`p-2 text-sm rounded-md ${props.imageModel === 'stability-core' ? 'bg-indigo-600 text-white' : 'bg-white/10 text-gray-300'}`}>Stability AI</button>
+                            <button onClick={() => props.setImageModel('imagen-4.0-generate-001')} className={`p-2 text-sm rounded-md ${props.imageModel === 'imagen-4.0-generate-001' ? 'bg-indigo-600 text-white' : 'bg-white/10 text-gray-300'}`}>Imagen 4 (HD)</button>
+                            <button onClick={() => props.setImageModel('gemini-2.5-flash-image')} className={`p-2 text-sm rounded-md ${props.imageModel === 'gemini-2.5-flash-image' ? 'bg-indigo-600 text-white' : 'bg-white/10 text-gray-300'}`}>Flash (Fast)</button>
                         </div>
                     </OptionGroup>
                     <OptionGroup title="Aspect Ratio">
@@ -342,33 +344,33 @@ const GenerationControls: React.FC<{
                     <OptionGroup title={
                         <div className="flex justify-between items-center">
                             <span>Style Presets</span>
-                            {props.imageStylePresets.length > 0 && 
+                            {props.imageStylePresets.length > 0 &&
                                 <button onClick={() => props.setImageStylePresets([])} className="text-xs font-semibold text-indigo-400 hover:underline">Clear</button>
                             }
                         </div>
                     }>
-                         <div className="flex flex-wrap gap-2">
+                        <div className="flex flex-wrap gap-2">
                             {IMAGE_STYLE_PRESETS.map(preset => (
-                                 <button key={preset} onClick={() => toggleStylePreset(preset, props.imageStylePresets, props.setImageStylePresets)} className={`px-3 py-1 text-xs rounded-full ${props.imageStylePresets.includes(preset) ? 'bg-indigo-600 text-white' : 'bg-white/10 text-gray-300'}`}>{preset}</button>
+                                <button key={preset} onClick={() => toggleStylePreset(preset, props.imageStylePresets, props.setImageStylePresets)} className={`px-3 py-1 text-xs rounded-full ${props.imageStylePresets.includes(preset) ? 'bg-indigo-600 text-white' : 'bg-white/10 text-gray-300'}`}>{preset}</button>
                             ))}
                         </div>
                     </OptionGroup>
-                     <OptionGroup title="Export Format">
+                    <OptionGroup title="Export Format">
                         <div className="grid grid-cols-2 gap-2">
-                           <button onClick={() => props.setImageMimeType('image/jpeg')} className={`p-2 text-sm rounded-md ${props.imageMimeType === 'image/jpeg' ? 'bg-indigo-600 text-white' : 'bg-white/10 text-gray-300'}`}>JPEG</button>
-                           <button onClick={() => props.setImageMimeType('image/png')} className={`p-2 text-sm rounded-md ${props.imageMimeType === 'image/png' ? 'bg-indigo-600 text-white' : 'bg-white/10 text-gray-300'}`}>PNG</button>
+                            <button onClick={() => props.setImageMimeType('image/jpeg')} className={`p-2 text-sm rounded-md ${props.imageMimeType === 'image/jpeg' ? 'bg-indigo-600 text-white' : 'bg-white/10 text-gray-300'}`}>JPEG</button>
+                            <button onClick={() => props.setImageMimeType('image/png')} className={`p-2 text-sm rounded-md ${props.imageMimeType === 'image/png' ? 'bg-indigo-600 text-white' : 'bg-white/10 text-gray-300'}`}>PNG</button>
                         </div>
                     </OptionGroup>
                 </>
             )}
 
             {props.activeTab === 'video' && (
-                 <>
+                <>
                     <details className="space-y-4" open>
-                       <summary className="text-lg font-semibold cursor-pointer text-white">Director's Toolkit</summary>
-                       <div className="pl-4 border-l-2 border-white/20 space-y-6">
+                        <summary className="text-lg font-semibold cursor-pointer text-white">Director's Toolkit</summary>
+                        <div className="pl-4 border-l-2 border-white/20 space-y-6">
                             <OptionGroup title="Reference Images">
-                               <ReferenceImageUploader />
+                                <ReferenceImageUploader />
                             </OptionGroup>
                             {isMultiFrame && (
                                 <div className="p-3 text-xs text-blue-200 bg-blue-900/50 rounded-lg border border-blue-700">
@@ -387,8 +389,8 @@ const GenerationControls: React.FC<{
                                     <option value="veo-3.1-generate-preview">Veo 3.1 HD</option>
                                 </select>
                             </OptionGroup>
-                             <div className="grid grid-cols-2 gap-4">
-                                 <OptionGroup title="Aspect Ratio">
+                            <div className="grid grid-cols-2 gap-4">
+                                <OptionGroup title="Aspect Ratio">
                                     <div className="grid grid-cols-2 gap-2">
                                         <button onClick={() => props.setVideoAspectRatio('16:9')} disabled={isMultiFrame} className={`p-2 text-sm rounded-md ${props.videoAspectRatio === '16:9' ? 'bg-indigo-600 text-white' : 'bg-white/10 text-gray-300'} disabled:opacity-50`}>16:9</button>
                                         <button onClick={() => props.setVideoAspectRatio('9:16')} disabled={isMultiFrame} className={`p-2 text-sm rounded-md ${props.videoAspectRatio === '9:16' ? 'bg-indigo-600 text-white' : 'bg-white/10 text-gray-300'} disabled:opacity-50`}>9:16</button>
@@ -400,8 +402,8 @@ const GenerationControls: React.FC<{
                                         <button onClick={() => props.setResolution('1080p')} disabled={isMultiFrame} className={`p-2 text-sm rounded-md ${props.resolution === '1080p' ? 'bg-indigo-600 text-white' : 'bg-white/10 text-gray-300'} disabled:opacity-50`}>Full HD (1080p)</button>
                                     </div>
                                 </OptionGroup>
-                             </div>
-                             <OptionGroup title={
+                            </div>
+                            <OptionGroup title={
                                 <div className="flex items-center space-x-2">
                                     <span>Duration</span>
                                     <div className="group relative">
@@ -411,12 +413,12 @@ const GenerationControls: React.FC<{
                                         </div>
                                     </div>
                                 </div>
-                             }>
+                            }>
                                 <div className="text-center p-2 bg-black/20 rounded-md">
                                     <p className="text-sm font-semibold text-gray-200">~7 seconds</p>
                                 </div >
                             </OptionGroup>
-                             <OptionGroup title="Watermark (Preview)">
+                            <OptionGroup title="Watermark (Preview)">
                                 <input
                                     type="text"
                                     value={props.watermark}
@@ -428,7 +430,7 @@ const GenerationControls: React.FC<{
                             <OptionGroup title={
                                 <div className="flex justify-between items-center">
                                     <span>Style Presets</span>
-                                    {props.videoStylePresets.length > 0 && 
+                                    {props.videoStylePresets.length > 0 &&
                                         <button onClick={() => props.setVideoStylePresets([])} className="text-xs font-semibold text-indigo-400 hover:underline">Clear</button>
                                     }
                                 </div>
@@ -443,26 +445,26 @@ const GenerationControls: React.FC<{
                     </details>
                     <details className="space-y-4" open>
                         <summary className="text-lg font-semibold cursor-pointer text-white">Generate Voiceover</summary>
-                         <div className="pl-4 border-l-2 border-white/20 space-y-4">
+                        <div className="pl-4 border-l-2 border-white/20 space-y-4">
                             {props.voiceoverScripts.map((vs) => (
                                 <div key={vs.id} className="p-3 bg-black/20 rounded-lg">
                                     <div className="flex justify-between items-center mb-2">
-                                        <input 
-                                            type="text" 
-                                            value={vs.speaker} 
-                                            onChange={e => updateVoiceoverScript(vs.id, { speaker: e.target.value })} 
+                                        <input
+                                            type="text"
+                                            value={vs.speaker}
+                                            onChange={e => updateVoiceoverScript(vs.id, { speaker: e.target.value })}
                                             className="text-sm font-semibold bg-transparent text-white"
                                         />
-                                        <button onClick={() => removeVoiceoverScript(vs.id)}><XIcon className="h-4 w-4 text-gray-400"/></button>
+                                        <button onClick={() => removeVoiceoverScript(vs.id)}><XIcon className="h-4 w-4 text-gray-400" /></button>
                                     </div>
-                                    <textarea 
-                                        rows={2} 
+                                    <textarea
+                                        rows={2}
                                         value={vs.script}
                                         onChange={e => updateVoiceoverScript(vs.id, { script: e.target.value })}
                                         className="w-full text-sm p-2 bg-white/5 text-white border border-white/20 rounded-md"
                                         placeholder={`Script for ${vs.speaker}...`}
                                     />
-                                     <div className={`grid ${props.voiceoverScripts.length === 1 ? 'grid-cols-2' : 'grid-cols-1'} gap-2 mt-2`}>
+                                    <div className={`grid ${props.voiceoverScripts.length === 1 ? 'grid-cols-2' : 'grid-cols-1'} gap-2 mt-2`}>
                                         <select
                                             value={vs.voice}
                                             onChange={e => updateVoiceoverScript(vs.id, { voice: e.target.value })}
@@ -482,42 +484,42 @@ const GenerationControls: React.FC<{
                                     </div>
                                 </div>
                             ))}
-                            <button 
-                                onClick={addVoiceoverScript} 
+                            <button
+                                onClick={addVoiceoverScript}
                                 disabled={props.voiceoverScripts.length >= 2}
                                 className="w-full flex items-center justify-center p-2 text-sm font-medium text-indigo-300 bg-indigo-500/30 rounded-md hover:bg-indigo-500/40 disabled:opacity-50"
                             >
                                 <PlusCircleIcon className="h-5 w-5 mr-2" />
                                 Add Speaker (Max 2)
                             </button>
-                         </div>
+                        </div>
                     </details>
                 </>
             )}
 
-             {props.activeTab === 'speech' && (
+            {props.activeTab === 'speech' && (
                 <div className="space-y-4">
                     {props.voiceoverScripts.map((vs) => (
                         <div key={vs.id} className="p-3 bg-black/20 rounded-lg">
                             <div className="flex justify-between items-center mb-2">
-                                <input 
-                                    type="text" 
-                                    value={vs.speaker} 
-                                    onChange={e => updateVoiceoverScript(vs.id, { speaker: e.target.value })} 
+                                <input
+                                    type="text"
+                                    value={vs.speaker}
+                                    onChange={e => updateVoiceoverScript(vs.id, { speaker: e.target.value })}
                                     className="text-sm font-semibold bg-transparent text-white"
                                 />
                                 {props.voiceoverScripts.length > 1 && (
-                                    <button onClick={() => removeVoiceoverScript(vs.id)}><XIcon className="h-4 w-4 text-gray-400"/></button>
+                                    <button onClick={() => removeVoiceoverScript(vs.id)}><XIcon className="h-4 w-4 text-gray-400" /></button>
                                 )}
                             </div>
-                            <textarea 
-                                rows={3} 
+                            <textarea
+                                rows={3}
                                 value={vs.script}
                                 onChange={e => updateVoiceoverScript(vs.id, { script: e.target.value })}
                                 className="w-full text-sm p-2 bg-white/5 text-white border border-white/20 rounded-md"
                                 placeholder={`Script for ${vs.speaker}...`}
                             />
-                             <div className={`grid ${props.voiceoverScripts.length === 1 ? 'grid-cols-2' : 'grid-cols-1'} gap-2 mt-2`}>
+                            <div className={`grid ${props.voiceoverScripts.length === 1 ? 'grid-cols-2' : 'grid-cols-1'} gap-2 mt-2`}>
                                 <select
                                     value={vs.voice}
                                     onChange={e => updateVoiceoverScript(vs.id, { voice: e.target.value })}
@@ -538,8 +540,8 @@ const GenerationControls: React.FC<{
                         </div>
                     ))}
                     {props.voiceoverScripts.length < 2 && (
-                        <button 
-                            onClick={addVoiceoverScript} 
+                        <button
+                            onClick={addVoiceoverScript}
                             className="w-full flex items-center justify-center p-2 text-sm font-medium text-indigo-300 bg-indigo-500/30 rounded-md hover:bg-indigo-500/40"
                         >
                             <PlusCircleIcon className="h-5 w-5 mr-2" />
@@ -553,7 +555,7 @@ const GenerationControls: React.FC<{
 };
 
 
-const ResultCard: React.FC<{ 
+const ResultCard: React.FC<{
     title: string;
     children: React.ReactNode;
     actions?: React.ReactNode;
@@ -563,20 +565,20 @@ const ResultCard: React.FC<{
 
     return (
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="glass-card overflow-hidden"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="glass-card overflow-hidden"
         >
             <div className="p-4 border-b border-white/10 flex justify-between items-center">
                 <h3 className="text-xl font-bold text-white">{title}</h3>
                 <div className="flex items-center space-x-2">
                     {actions}
-                     <AnimatePresence>
+                    <AnimatePresence>
                         {saveConfirmation && (
-                            <motion.span 
-                                initial={{ opacity: 0, y: 5 }} 
-                                animate={{ opacity: 1, y: 0 }} 
-                                exit={{ opacity: 0, y: -5 }} 
+                            <motion.span
+                                initial={{ opacity: 0, y: 5 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -5 }}
                                 className="text-xs text-green-400 font-medium whitespace-nowrap"
                             >
                                 {saveConfirmation}
@@ -615,7 +617,7 @@ const VideoResult: React.FC<{
     const [extendPrompt, setExtendPrompt] = useState('');
     const [remixPrompt, setRemixPrompt] = useState('');
     const videoRef = useRef<HTMLVideoElement>(null);
-    
+
     const handleExtend = () => {
         if (extendPrompt.trim()) {
             onExtend(extendPrompt, video.payload);
@@ -627,7 +629,7 @@ const VideoResult: React.FC<{
             onRemix(remixPrompt);
         }
     };
-    
+
     const handleExportSrt = () => {
         if (videoRef.current) {
             onExportSrt(videoRef.current.duration);
@@ -653,7 +655,7 @@ const VideoResult: React.FC<{
     };
 
     return (
-         <div className="space-y-4">
+        <div className="space-y-4">
             <div className="relative w-full">
                 <video ref={videoRef} src={video.url} controls autoPlay loop className="w-full rounded-lg" />
                 {watermark && (
@@ -666,14 +668,14 @@ const VideoResult: React.FC<{
                 <details>
                     <summary className="font-semibold cursor-pointer text-white">Remix Video</summary>
                     <div className="mt-2 space-y-2">
-                         <textarea
+                        <textarea
                             rows={2}
                             value={remixPrompt}
                             onChange={e => setRemixPrompt(e.target.value)}
                             className="w-full text-sm p-2 bg-white/5 text-white border border-white/20 rounded-md"
                             placeholder="e.g., Make it black and white, add a vintage film grain."
                         />
-                        <button 
+                        <button
                             onClick={handleRemix}
                             disabled={isRemixing || !remixPrompt.trim()}
                             className="w-full flex items-center justify-center p-2 text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 disabled:bg-green-400"
@@ -686,14 +688,14 @@ const VideoResult: React.FC<{
                 <details>
                     <summary className="font-semibold cursor-pointer text-white">Extend Video</summary>
                     <div className="mt-2 space-y-2">
-                         <textarea
+                        <textarea
                             rows={2}
                             value={extendPrompt}
                             onChange={e => setExtendPrompt(e.target.value)}
                             className="w-full text-sm p-2 bg-white/5 text-white border border-white/20 rounded-md"
                             placeholder="e.g., ...and then a spaceship flies by."
                         />
-                        <button 
+                        <button
                             onClick={handleExtend}
                             disabled={isExtending || !extendPrompt.trim()}
                             className="w-full flex items-center justify-center p-2 text-sm font-medium rounded-md shadow-sm text-white bg-purple-600 hover:bg-purple-700 disabled:bg-purple-400"
@@ -703,20 +705,20 @@ const VideoResult: React.FC<{
                         </button>
                     </div>
                 </details>
-                 <details>
+                <details>
                     <summary className="font-semibold cursor-pointer text-white">Export &amp; Frame Tools</summary>
-                     <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-2">
                         <button onClick={handleExportSrt} className="flex items-center justify-center p-2 text-sm font-medium text-gray-300 bg-white/10 rounded-md hover:bg-white/20">
-                           <ClosedCaptionIcon className="h-4 w-4 mr-2" /> Download SRT
+                            <ClosedCaptionIcon className="h-4 w-4 mr-2" /> Download SRT
                         </button>
-                         <button onClick={handleExportFrame} className="flex items-center justify-center p-2 text-sm font-medium text-gray-300 bg-white/10 rounded-md hover:bg-white/20">
-                           <CameraIcon className="h-4 w-4 mr-2" /> Capture Frame
+                        <button onClick={handleExportFrame} className="flex items-center justify-center p-2 text-sm font-medium text-gray-300 bg-white/10 rounded-md hover:bg-white/20">
+                            <CameraIcon className="h-4 w-4 mr-2" /> Capture Frame
                         </button>
                         <button onClick={handleUseFrameAsStart} className="flex items-center justify-center p-2 text-sm font-medium text-gray-300 bg-white/10 rounded-md hover:bg-white/20">
-                           <ImageIcon className="h-4 w-4 mr-2" /> Use as Start
+                            <ImageIcon className="h-4 w-4 mr-2" /> Use as Start
                         </button>
-                         <button onClick={handleRemixFromFrame} className="flex items-center justify-center p-2 text-sm font-medium text-gray-300 bg-white/10 rounded-md hover:bg-white/20">
-                           <PencilIcon className="h-4 w-4 mr-2" /> Remix from Frame
+                        <button onClick={handleRemixFromFrame} className="flex items-center justify-center p-2 text-sm font-medium text-gray-300 bg-white/10 rounded-md hover:bg-white/20">
+                            <PencilIcon className="h-4 w-4 mr-2" /> Remix from Frame
                         </button>
                     </div>
                 </details>
@@ -727,7 +729,7 @@ const VideoResult: React.FC<{
 
 export const GenerationView: React.FC<GenerationViewProps> = () => {
     // Fix: Destructure missing context values
-    const { 
+    const {
         brandVoice,
         attemptGeneration,
         onSuccessfulGeneration,
@@ -740,20 +742,20 @@ export const GenerationView: React.FC<GenerationViewProps> = () => {
         handleSaveAssetToProject,
         sessionState,
         updateSessionState,
-        abortControllerRef, 
-        withApiErrorHandling, 
+        abortControllerRef,
+        withApiErrorHandling,
         // NEW: Generation-specific states from context, now managed globally.
-        generatedImage, setGeneratedImage, 
-        generatedVideo, setGeneratedVideo, 
-        generatedSpeechUrl, setGeneratedSpeechUrl, 
+        generatedImage, setGeneratedImage,
+        generatedVideo, setGeneratedVideo,
+        generatedSpeechUrl, setGeneratedSpeechUrl,
         viralScriptResult, setViralScriptResult, // ViralScriptResult is global for export hub
-        isGeneratingScriptAudio, 
+        isGeneratingScriptAudio,
         scriptAudio,
         setScriptAudio, // Destructure setScriptAudio
-        handleCancel, 
-        handleTypeChange, 
-        setInitialGenerationProps, 
-        handleGenerateVideoFromScript, 
+        handleCancel,
+        handleTypeChange,
+        setInitialGenerationProps,
+        handleGenerateVideoFromScript,
     } = useAppContext();
 
     // Shared State
@@ -809,7 +811,7 @@ export const GenerationView: React.FC<GenerationViewProps> = () => {
         setVideoStylePresets(savedState.videoStylePresets || []);
         setWatermark(savedState.watermark || '');
         setVoiceoverScripts(savedState.voiceoverScripts || [{ id: 1, speaker: 'Speaker 1', script: '', voice: 'Kore', style: 'Default' }]);
-        
+
         // Also clear local results when tab changes to avoid stale displays
         resetLocalResults();
 
@@ -830,7 +832,7 @@ export const GenerationView: React.FC<GenerationViewProps> = () => {
         activeTab, prompt, link, imageModel, negativePrompt, imageAspectRatio, imageStylePresets, imageMimeType,
         videoModel, videoAspectRatio, resolution, videoStylePresets, watermark, voiceoverScripts, updateSessionState
     ]);
-    
+
     // Initial script from another view
     useEffect(() => {
         if (initialGenerationProps) {
@@ -850,24 +852,24 @@ export const GenerationView: React.FC<GenerationViewProps> = () => {
         const newItem = { ...item, timestamp: new Date().toISOString() };
         setPromptHistory(prev => [newItem, ...(prev || []).slice(0, 99)]); // Keep last 100
     };
-    
+
     const handleSelectFromHistory = (item: PromptHistoryItem) => {
         setActiveTab(item.type);
         setPrompt(item.prompt);
         // Restore all settings from history
-        if(item.link) setLink(item.link);
-        if(item.imageModel) setImageModel(item.imageModel);
-        if(item.aspectRatio) {
-            if(item.type === 'image') setImageAspectRatio(item.aspectRatio as ImageAspectRatio);
-            if(item.type === 'video') setVideoAspectRatio(item.aspectRatio as VideoAspectRatio);
+        if (item.link) setLink(item.link);
+        if (item.imageModel) setImageModel(item.imageModel);
+        if (item.aspectRatio) {
+            if (item.type === 'image') setImageAspectRatio(item.aspectRatio as ImageAspectRatio);
+            if (item.type === 'video') setVideoAspectRatio(item.aspectRatio as VideoAspectRatio);
         }
-        if(item.imageStylePresets) setImageStylePresets(item.imageStylePresets);
-        if(item.imageMimeType) setImageMimeType(item.imageMimeType);
-        if(item.videoModel) setVideoModel(item.videoModel);
-        if(item.resolution) setResolution(item.resolution as VideoResolution);
-        if(item.videoStylePresets) setVideoStylePresets(item.videoStylePresets);
-        if(item.voiceoverScripts) setVoiceoverScripts(item.voiceoverScripts);
-        if(item.voice) setVoiceoverScripts([{ id: 1, speaker: 'Speaker 1', script: item.prompt, voice: item.voice }]);
+        if (item.imageStylePresets) setImageStylePresets(item.imageStylePresets);
+        if (item.imageMimeType) setImageMimeType(item.imageMimeType);
+        if (item.videoModel) setVideoModel(item.videoModel);
+        if (item.resolution) setResolution(item.resolution as VideoResolution);
+        if (item.videoStylePresets) setVideoStylePresets(item.videoStylePresets);
+        if (item.voiceoverScripts) setVoiceoverScripts(item.voiceoverScripts);
+        if (item.voice) setVoiceoverScripts([{ id: 1, speaker: 'Speaker 1', script: item.prompt, voice: item.voice }]);
 
         setIsHistoryOpen(false);
     };
@@ -888,7 +890,7 @@ export const GenerationView: React.FC<GenerationViewProps> = () => {
         setReferenceFrames([]);
         console.log('GenerationView: Local results reset.');
     }, [setViralScriptResult, setGeneratedImage, setGeneratedVideo, setGeneratedSpeechUrl, setGeneratedSocialPost, setScriptAudio, referenceFrames]);
-    
+
     const handleClearInputs = () => {
         setPrompt('');
         setLink('');
@@ -951,7 +953,7 @@ export const GenerationView: React.FC<GenerationViewProps> = () => {
         }
 
         if (!attemptGeneration()) return;
-        
+
         if (activeTab === 'video') {
             const generateAction = async () => {
                 resetLocalResults(); // Reset local results before starting new generation
@@ -1007,16 +1009,16 @@ export const GenerationView: React.FC<GenerationViewProps> = () => {
                         scriptText += chunk;
                         setViralScriptResult(parseViralScript(scriptText)); // Use global setter
                     });
-                    
+
                     const finalScript = parseViralScript(scriptText);
                     setViralScriptResult(finalScript); // Use global setter
-                    
+
                     if (finalScript.storyboard) {
                         const scenes = finalScript.storyboard.split('\n').map(s => s.replace(/^\d+\.\s*/, '').trim()).filter(Boolean);
                         if (scenes.length > 0) {
                             setStoryboardImages(scenes.map(scene => ({ scene, imageUrl: null })));
-                            
-                            Promise.allSettled(scenes.map(scene => 
+
+                            Promise.allSettled(scenes.map(scene =>
                                 withApiErrorHandling(aiService.generateImage, `Cinematic shot for a video: ${scene}`, 'gemini-2.5-flash-image', '16:9', 'image/jpeg')
                             )).then(results => {
                                 setStoryboardImages(scenes.map((scene, index) => {
@@ -1051,7 +1053,7 @@ export const GenerationView: React.FC<GenerationViewProps> = () => {
                         throw new Error("No text provided for speech generation.");
                     }
                     const speechBase64 = await withApiErrorHandling(aiService.generateSpeech, scriptsToProcess);
-                    if(speechBase64) {
+                    if (speechBase64) {
                         // Fix: Define audioBlob before using it
                         const audioBlob = pcmToMp3Blob(new Int16Array(decode(speechBase64).buffer), 24000, 1);
                         setGeneratedSpeechUrl(URL.createObjectURL(audioBlob)); // Use global setter
@@ -1071,13 +1073,13 @@ export const GenerationView: React.FC<GenerationViewProps> = () => {
             setIsLoading(false);
         }
     };
-    
+
     const handleGenerateSocialPost = async (script: string) => {
         if (!attemptGeneration()) return;
         setIsGeneratingSocialPost(true);
         setGeneratedSocialPost('');
         try {
-            let postContent = ''; 
+            let postContent = '';
             await withApiErrorHandling(aiService.generateSocialPostFromScript, script, brandVoice, (chunk) => {
                 postContent += chunk;
                 setGeneratedSocialPost(postContent);
@@ -1090,8 +1092,8 @@ export const GenerationView: React.FC<GenerationViewProps> = () => {
             setIsGeneratingSocialPost(false);
         }
     };
-    
-     const handleListenToScript = async (script: string, voice: string, style: string) => {
+
+    const handleListenToScript = async (script: string, voice: string, style: string) => {
         if (!attemptGeneration()) return;
         // if (scriptAudio) URL.revokeObjectURL(scriptAudio.url); // scriptAudio is now global
         // setScriptAudio(null); // scriptAudio is now global
@@ -1107,10 +1109,10 @@ export const GenerationView: React.FC<GenerationViewProps> = () => {
             // setIsGeneratingScriptAudio(false); // isGeneratingScriptAudio is now global
         }
     };
-    
+
     const handleExtendVideo = async (newPrompt: string, payload: any) => {
         if (!attemptGeneration()) return;
-        
+
         const extendAction = async () => {
             setIsLoading(true);
             setError(null);
@@ -1119,8 +1121,8 @@ export const GenerationView: React.FC<GenerationViewProps> = () => {
                 setGeneratedVideo(videoResult); // Use global setter
                 addNotification("Video extended successfully!", 'success');
                 onSuccessfulGeneration();
-            } catch(err: any) {
-                 if (err.name === 'AbortError') {
+            } catch (err: any) {
+                if (err.name === 'AbortError') {
                     console.log('Video extension aborted.');
                 } else if (err.message?.includes("Requested entity was not found.")) {
                     setError("Your API key may be invalid or expired. Please select a new one to continue.");
@@ -1154,7 +1156,7 @@ export const GenerationView: React.FC<GenerationViewProps> = () => {
                 const frameFiles = referenceFrames.map(f => f.file);
                 const videoResult = await withApiErrorHandling(aiService.generateVideo, newPrompt, videoModel, videoAspectRatio, resolution, frameFiles);
                 setGeneratedVideo(videoResult); // Use global setter
-                setPrompt(newPrompt); 
+                setPrompt(newPrompt);
                 addToHistory({ type: 'video', prompt: newPrompt, videoModel, aspectRatio: videoAspectRatio, resolution, videoStylePresets, referenceFrameCount: referenceFrames.length });
                 onSuccessfulGeneration();
             } catch (err: any) {
@@ -1171,7 +1173,7 @@ export const GenerationView: React.FC<GenerationViewProps> = () => {
                 setIsLoading(false);
             }
         };
-        
+
         if ((window as any).aistudio && !(await (window as any).aistudio.hasSelectedApiKey())) {
             setInterruptedVideoAction(() => remixAction);
             setIsApiKeyModalOpen(true);
@@ -1180,7 +1182,7 @@ export const GenerationView: React.FC<GenerationViewProps> = () => {
 
         await remixAction();
     };
-    
+
     const handleEditImage = async () => {
         if (!editPrompt.trim() || !generatedImage || !attemptGeneration()) return;
         setIsLoading(true);
@@ -1192,14 +1194,14 @@ export const GenerationView: React.FC<GenerationViewProps> = () => {
             setGeneratedImage(newImageUrl); // Use global setter
             setEditPrompt('');
             onSuccessfulGeneration();
-        } catch(err: any) {
+        } catch (err: any) {
             if (err.name === 'AbortError') console.log('Image edit aborted.');
             else setError(err.message || 'Failed to edit image.');
         } finally {
             setIsLoading(false);
         }
     }
-        
+
     const onExportSrt = (duration: number) => {
         if (!prompt) return;
         const srtContent = exportScriptAsSrt(prompt, duration);
@@ -1233,9 +1235,9 @@ export const GenerationView: React.FC<GenerationViewProps> = () => {
             const url = URL.createObjectURL(file);
             const a = document.createElement('a'); a.href = url; a.download = file.name;
             document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
-        } catch(e) { setError((e as Error).message); }
+        } catch (e) { setError((e as Error).message); }
     };
-    
+
     const onUseFrameAsStart = async (videoEl: HTMLVideoElement) => {
         try {
             const file = await captureFrameAsFile(videoEl);
@@ -1243,7 +1245,7 @@ export const GenerationView: React.FC<GenerationViewProps> = () => {
             referenceFrames.forEach(f => URL.revokeObjectURL(f.preview)); // Clean up existing URLs
             setReferenceFrames([{ file, preview: URL.createObjectURL(file) }]);
             addNotification('Video frame set as starting reference image.', 'success');
-        } catch(e) { setError((e as Error).message); }
+        } catch (e) { setError((e as Error).message); }
     };
 
     const onRemixFromFrame = async (videoEl: HTMLVideoElement) => {
@@ -1256,9 +1258,9 @@ export const GenerationView: React.FC<GenerationViewProps> = () => {
             });
             // This is a simplified approach; in a full app, you might set a specific state
             // to indicate the source image for the remix.
-            setInitialGenerationProps({ 
-                prompt: 'Remix video using this captured frame as a reference.', 
-                type: 'video', 
+            setInitialGenerationProps({
+                prompt: 'Remix video using this captured frame as a reference.',
+                type: 'video',
                 settings: {
                     referenceImage: {
                         imageBytes: base64Data,
@@ -1268,9 +1270,9 @@ export const GenerationView: React.FC<GenerationViewProps> = () => {
             });
             handleTypeChange('contentGeneration');
             addNotification('Video frame loaded as remix reference. Adjust prompt and generate.', 'info');
-        } catch(e) { setError((e as Error).message); }
+        } catch (e) { setError((e as Error).message); }
     };
-    
+
     const handleCopyImage = async (imageUrl: string) => {
         try {
             const response = await fetch(imageUrl);
@@ -1288,14 +1290,14 @@ export const GenerationView: React.FC<GenerationViewProps> = () => {
             addNotification('Failed to copy image.', 'error');
         }
     };
-    
+
     const handleDownloadImage = (imageUrl: string) => {
-         const a = document.createElement('a');
-         a.href = imageUrl;
-         a.download = `generated_image_${Date.now()}.jpg`;
-         document.body.appendChild(a);
-         a.click();
-         document.body.removeChild(a);
+        const a = document.createElement('a');
+        a.href = imageUrl;
+        a.download = `generated_image_${Date.now()}.jpg`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
     };
 
 
@@ -1325,7 +1327,7 @@ export const GenerationView: React.FC<GenerationViewProps> = () => {
                     </button>
                 </div>
 
-                <GenerationControls 
+                <GenerationControls
                     activeTab={activeTab}
                     prompt={prompt}
                     setPrompt={setPrompt}
@@ -1381,8 +1383,8 @@ export const GenerationView: React.FC<GenerationViewProps> = () => {
                 )}
 
                 {!isLoading && activeTab === 'script' && viralScriptResult && (
-                    <ViralScriptCard 
-                        scriptData={viralScriptResult} 
+                    <ViralScriptCard
+                        scriptData={viralScriptResult}
                         storyboardImages={storyboardImages}
                         onGenerateVideoFromScript={handleGenerateVideoFromScript}
                         onGenerateThumbnail={(concept) => {
@@ -1404,21 +1406,21 @@ export const GenerationView: React.FC<GenerationViewProps> = () => {
                 )}
 
                 {!isLoading && activeTab === 'image' && generatedImage && (
-                    <ResultCard 
+                    <ResultCard
                         title="AI Generated Image"
                         onSave={() => handleSaveAssetToProject(generatedImage, 'image', prompt)}
                         actions={
                             <>
-                                <button 
-                                    onClick={() => handleCopyImage(generatedImage)} 
-                                    className="p-1.5 rounded-md text-gray-400 hover:bg-white/20" 
+                                <button
+                                    onClick={() => handleCopyImage(generatedImage)}
+                                    className="p-1.5 rounded-md text-gray-400 hover:bg-white/20"
                                     title="Copy to Clipboard"
                                 >
                                     {copiedImage ? <CheckIcon className="h-5 w-5 text-green-400" /> : <ClipboardIcon className="h-5 w-5" />}
                                 </button>
-                                <button 
-                                    onClick={() => handleDownloadImage(generatedImage)} 
-                                    className="p-1.5 rounded-md text-gray-400 hover:bg-white/20" 
+                                <button
+                                    onClick={() => handleDownloadImage(generatedImage)}
+                                    className="p-1.5 rounded-md text-gray-400 hover:bg-white/20"
                                     title="Download Image"
                                 >
                                     <DownloadIcon className="h-5 w-5" />
@@ -1437,7 +1439,7 @@ export const GenerationView: React.FC<GenerationViewProps> = () => {
                                     className="w-full text-sm p-2 bg-white/5 text-white border border-white/20 rounded-md"
                                     placeholder="e.g., Add a futuristic robot to the scene."
                                 />
-                                <button 
+                                <button
                                     onClick={handleEditImage}
                                     disabled={!editPrompt.trim()}
                                     className="w-full flex items-center justify-center p-2 text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 transition-transform active:scale-95"
@@ -1451,11 +1453,11 @@ export const GenerationView: React.FC<GenerationViewProps> = () => {
                 )}
 
                 {!isLoading && activeTab === 'video' && generatedVideo && (
-                    <ResultCard 
+                    <ResultCard
                         title="AI Generated Video"
                         onSave={() => handleSaveAssetToProject(generatedVideo.url, 'video', prompt)}
                     >
-                        <VideoResult 
+                        <VideoResult
                             video={generatedVideo}
                             prompt={prompt}
                             watermark={watermark}
@@ -1470,26 +1472,26 @@ export const GenerationView: React.FC<GenerationViewProps> = () => {
                             onRemixFromFrame={onRemixFromFrame}
                             scriptAudio={scriptAudio}
                         />
-                         {scriptAudio?.url && (
-                             <div className="p-4 bg-black/20 rounded-lg mt-4 space-y-2">
+                        {scriptAudio?.url && (
+                            <div className="p-4 bg-black/20 rounded-lg mt-4 space-y-2">
                                 <h4 className="font-semibold text-white">Generated Voiceover</h4>
                                 <audio src={scriptAudio.url} controls className="w-full" />
                             </div>
-                         )}
+                        )}
                     </ResultCard>
                 )}
 
-                 {!isLoading && activeTab === 'speech' && generatedSpeechUrl && (
-                    <ResultCard 
+                {!isLoading && activeTab === 'speech' && generatedSpeechUrl && (
+                    <ResultCard
                         title="AI Generated Speech"
                         onSave={() => handleSaveAssetToProject(generatedSpeechUrl, 'speech', prompt)}
                     >
                         <audio src={generatedSpeechUrl} controls autoPlay className="w-full" />
                         <p className="text-sm text-gray-400 mt-2">Listen to your generated speech.</p>
                     </ResultCard>
-                 )}
+                )}
             </div>
-            
+
             {isHistoryOpen && <PromptHistoryModal isOpen={isHistoryOpen} onClose={() => setIsHistoryOpen(false)} onSelect={handleSelectFromHistory} />}
             {isTemplatesModalOpen && <PromptTemplatesModal onClose={() => setIsTemplatesModalOpen(false)} onSelect={(template) => { setPrompt(template); setIsTemplatesModalOpen(false); }} />}
             {isApiKeyModalOpen && (

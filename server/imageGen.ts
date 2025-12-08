@@ -113,49 +113,68 @@ const generateHuggingFaceImage = async (prompt: string): Promise<string> => {
 
 // --- Main Switcher ---
 
-export const generateImageMultiProvider = async (prompt: string, aspectRatio: string = "1:1"): Promise<string> => {
+export const generateImageMultiProvider = async (prompt: string, aspectRatio: string = "1:1", preferredProvider?: string): Promise<string> => {
     let lastError = null;
+    let attemptedProviders: string[] = [];
 
-    // 1. Try Fal.ai
-    if (FAL_KEY) {
+    // Helper to try a provider
+    const tryProvider = async (provider: string) => {
+        if (attemptedProviders.includes(provider)) return null; // Already tried
+        attemptedProviders.push(provider);
+
         try {
-            console.log("Attempting generation with Fal.ai...");
-            return await generateFalImage(prompt, aspectRatio);
+            if (provider === 'fal' && FAL_KEY) {
+                console.log("Attempting generation with Fal.ai...");
+                return await generateFalImage(prompt, aspectRatio);
+            }
+            if (provider === 'stability' && STABILITY_API_KEY) {
+                console.log("Attempting generation with Stability AI...");
+                return await generateStabilityImage(prompt, aspectRatio);
+            }
+            if (provider === 'huggingface') {
+                console.log("Attempting generation with Hugging Face...");
+                return await generateHuggingFaceImage(prompt);
+            }
+            if (provider === 'google' || provider === 'imagen') {
+                console.log("Attempting generation with Google Imagen...");
+                return await gemini.generateImage(prompt, aspectRatio);
+            }
         } catch (e: any) {
-            console.warn("Fal.ai failed, switching provider...", e.message);
+            console.warn(`${provider} failed:`, e.message);
             lastError = e;
         }
+        return null;
+    };
+
+    // 1. Try Preferred Provider first
+    if (preferredProvider) {
+        // Map frontend model names to providers
+        let providerKey = preferredProvider;
+        if (preferredProvider.includes('flux') || preferredProvider.includes('fal')) providerKey = 'fal';
+        if (preferredProvider.includes('stability') || preferredProvider.includes('stable')) providerKey = 'stability';
+        if (preferredProvider.includes('imagen')) providerKey = 'google';
+
+        const result = await tryProvider(providerKey);
+        if (result) return result;
     }
 
-    // 2. Try Stability AI
-    if (STABILITY_API_KEY) {
-        try {
-            console.log("Attempting generation with Stability AI...");
-            return await generateStabilityImage(prompt, aspectRatio);
-        } catch (e: any) {
-            console.warn("Stability AI failed, switching provider...", e.message);
-            lastError = e;
-        }
-    }
+    // 2. Fallback Chain (Skip already attempted)
 
-    // 3. Try Hugging Face
-    // (We permit trying HF even if key is missing as it allows some anon usage, but better with key)
-    try {
-        console.log("Attempting generation with Hugging Face...");
-        return await generateHuggingFaceImage(prompt);
-    } catch (e: any) {
-        console.warn("Hugging Face failed.", e.message);
-        lastError = e;
-        // 4. Try Google Imagen (Last Resort)
-        try {
-            console.log("Attempting generation with Google Imagen...");
-            // Use the existing function in gemini.ts we wrote earlier
-            return await gemini.generateImage(prompt, aspectRatio);
-        } catch (e: any) {
-            console.warn("Google Imagen failed.", e.message);
-            lastError = e;
-        }
-    }
+    // Try Fal
+    const falRes = await tryProvider('fal');
+    if (falRes) return falRes;
 
-    throw new Error(`All image generation providers failed. Last error: ${lastError?.message || 'Unknown'}`);
+    // Try Stability
+    const stabilityRes = await tryProvider('stability');
+    if (stabilityRes) return stabilityRes;
+
+    // Try Hugging Face
+    const hfRes = await tryProvider('huggingface');
+    if (hfRes) return hfRes;
+
+    // Try Google
+    const googleRes = await tryProvider('google');
+    if (googleRes) return googleRes;
+
+    throw new Error(`All image generation providers failed. Last error: ${(lastError as any)?.message || 'Unknown'}`);
 };

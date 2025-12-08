@@ -326,8 +326,8 @@ import * as imageGen from './imageGen';
 
 export const generateImage = async (req: Request, res: Response) => {
     try {
-        const { prompt, aspectRatio } = req.body;
-        const image = await imageGen.generateImageMultiProvider(prompt, aspectRatio);
+        const { prompt, aspectRatio, model } = req.body;
+        const image = await imageGen.generateImageMultiProvider(prompt, aspectRatio, model);
         res.json({ image });
     } catch (error: any) {
         console.error("Image Gen Error:", error);

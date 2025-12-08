@@ -253,7 +253,7 @@ export const generateRetirementPlan = async (signal: AbortSignal, inputs: any): 
 
 export const generateImage = async (signal: AbortSignal, prompt: string, model: string, aspectRatio: string, mimeType: string, negativePrompt?: string): Promise<string> => {
     // We are routing this to our backend now
-    const { image } = await api.post('/ai/generate/image', { prompt, aspectRatio });
+    const { image } = await api.post('/ai/generate/image', { prompt, aspectRatio, model });
     return image;
 };
 
