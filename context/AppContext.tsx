@@ -705,11 +705,26 @@ export const AppProvider: FC<{ children: ReactNode }> = ({ children }) => {
     if (currentUser?.role === 'owner') return true;
 
     if (currentUser?.plan === 'Free' && generationCount >= MAX_FREE_GENERATIONS) {
-      setOverlayContent(<UpgradeModal isOpen={true} onClose={() => setOverlayContent(null)} onUpgrade={() => { setAnalysisType('pricing'); setOverlayContent(null); }} />);
+      setOverlayContent(
+        <UpgradeModal
+          isOpen={true}
+          onClose={() => setOverlayContent(null)}
+          onUpgrade={() => { setAnalysisType('pricing'); setOverlayContent(null); }}
+          onPromoCodeApplied={() => {
+            if (currentUser) {
+              setCurrentUser({ ...currentUser, plan: 'Pro' });
+              addNotification('VIP Access Granted! You now have temporary Pro status.', 'success');
+              setOverlayContent(null);
+            } else {
+              addNotification('Please log in to apply promo code.', 'error');
+            }
+          }}
+        />
+      );
       return false;
     }
     return true;
-  }, [currentUser, generationCount]);
+  }, [currentUser, generationCount, addNotification]);
 
   const onSuccessfulGeneration = useCallback(() => {
     incrementGenerationCount();

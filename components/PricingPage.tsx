@@ -16,6 +16,11 @@ export const PricingPage = () => {
     };
 
     const handleSubscribe = async (plan: string, price: number, variantId?: string) => {
+        if (!currentUser) {
+            alert('Please log in to upgrade your plan.');
+            return;
+        }
+
         setLoading(plan);
         try {
             const provider = currency === 'UGX' ? 'flutterwave' : 'lemon';
@@ -31,9 +36,10 @@ export const PricingPage = () => {
             } else {
                 alert('Payment initialization failed. Please try again.');
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error('Subscription error:', error);
-            alert('Failed to start subscription. Please make sure you are logged in.');
+            const errorMessage = error.message || 'Failed to start subscription. Please try again later.';
+            alert(errorMessage);
         } finally {
             setLoading(null);
         }

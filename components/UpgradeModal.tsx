@@ -6,9 +6,10 @@ interface UpgradeModalProps {
   isOpen: boolean;
   onClose: () => void;
   onUpgrade: () => void;
+  onPromoCodeApplied?: () => void;
 }
 
-export const UpgradeModal: React.FC<UpgradeModalProps> = ({ isOpen, onClose, onUpgrade }) => {
+export const UpgradeModal: React.FC<UpgradeModalProps> = ({ isOpen, onClose, onUpgrade, onPromoCodeApplied }) => {
   if (!isOpen) return null;
 
   return (
@@ -49,9 +50,13 @@ export const UpgradeModal: React.FC<UpgradeModalProps> = ({ isOpen, onClose, onU
                 onClick={() => {
                   const input = document.getElementById('promo-code-input') as HTMLInputElement;
                   if (input && input.value.trim().toUpperCase() === 'VIP_ACCESS') {
-                    alert('Promo code applied! You have been granted temporary Pro access.');
-                    // In a real app, this would call an API. For now, we simulate success.
-                    onUpgrade(); // Alternatively, we could trigger a specific "unlock" callback if passed
+                    if (onPromoCodeApplied) {
+                      onPromoCodeApplied();
+                    } else {
+                      alert('Promo code applied! You have been granted temporary Pro access.');
+                      // Fallback if no specific handler provided
+                      onUpgrade();
+                    }
                   } else {
                     alert('Invalid promo code.');
                   }
