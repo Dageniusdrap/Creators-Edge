@@ -39,7 +39,7 @@ type ImageAspectRatio = '1:1' | '16:9' | '9:16' | '4:3' | '3:4';
 type VideoAspectRatio = '16:9' | '9:16';
 type VideoResolution = '720p' | '1080p';
 type ImageModel = 'imagen-4.0-generate-001' | 'gemini-2.5-flash-image' | 'fal-flux' | 'stability-core' | 'sd3' | 'recraft-v3';
-type VideoModel = 'veo-3.1-fast-generate-preview' | 'veo-3.1-generate-preview' | 'hunyuan-video' | 'luma-ray' | 'runway-gen3' | 'kling';
+type VideoModel = 'veo-3.1-fast-generate-preview' | 'veo-3.1-generate-preview' | 'hunyuan-video' | 'luma-ray' | 'runway-gen3' | 'kling' | 'fal';
 type ImageMimeType = 'image/jpeg' | 'image/png';
 
 
@@ -392,6 +392,7 @@ const GenerationControls: React.FC<{
                                     <button onClick={() => props.setVideoModel('luma-ray')} disabled={isMultiFrame} className={`p-2 text-sm rounded-md ${props.videoModel === 'luma-ray' ? 'bg-indigo-600 text-white' : 'bg-white/10 text-gray-300'} disabled:opacity-50`}>Luma Ray</button>
                                     <button onClick={() => props.setVideoModel('runway-gen3')} disabled={isMultiFrame} className={`p-2 text-sm rounded-md ${props.videoModel === 'runway-gen3' ? 'bg-indigo-600 text-white' : 'bg-white/10 text-gray-300'} disabled:opacity-50`}>Runway Gen-3</button>
                                     <button onClick={() => props.setVideoModel('kling')} disabled={isMultiFrame} className={`p-2 text-sm rounded-md ${props.videoModel === 'kling' ? 'bg-indigo-600 text-white' : 'bg-white/10 text-gray-300'} disabled:opacity-50`}>Kling</button>
+                                    <button onClick={() => props.setVideoModel('fal')} disabled={isMultiFrame} className={`p-2 text-sm rounded-md ${props.videoModel === 'fal' ? 'bg-indigo-600 text-white' : 'bg-white/10 text-gray-300'} disabled:opacity-50`}>Fal (Minimax)</button>
                                 </div>
                             </OptionGroup>
                             <div className="grid grid-cols-2 gap-4">

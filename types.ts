@@ -485,7 +485,7 @@ export interface PromptHistoryItem {
     aspectRatio?: string;
     imageStylePresets?: string[];
     imageMimeType?: 'image/jpeg' | 'image/png';
-    videoModel?: 'veo-3.1-fast-generate-preview' | 'veo-3.1-generate-preview' | 'hunyuan-video' | 'luma-ray' | 'runway-gen3' | 'kling';
+    videoModel?: 'veo-3.1-fast-generate-preview' | 'veo-3.1-generate-preview' | 'hunyuan-video' | 'luma-ray' | 'runway-gen3' | 'kling' | 'fal';
     resolution?: '720p' | '1080p';
     videoDuration?: number;
     videoStylePresets?: string[];

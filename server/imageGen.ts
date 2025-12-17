@@ -181,27 +181,69 @@ export const generateImageMultiProvider = async (prompt: string, aspectRatio: st
 
 // --- Video Generation ---
 
-export const generateVideo = async (prompt: string, aspectRatio: string = "16:9"): Promise<string> => {
+export const generateVideo = async (prompt: string, aspectRatio: string = "16:9", model: string = "hunyuan-video"): Promise<string> => {
     if (!FAL_KEY) throw new Error("Video generation requires FAL_KEY (Fal.ai).");
 
-    console.log("Generating video with Fal.ai (Hunyuan)...");
+    if (model.includes('veo')) {
+        throw new Error("Google Veo models are coming soon! Please select a Fal model (Kling, Hunyuan, Luma) for now.");
+    }
 
-    // Map aspect ratio
-    let aspect = "16:9";
-    if (aspectRatio === "9:16") aspect = "9:16";
+    let falModelId = "fal-ai/hunyuan-video";
+    let inputParams: any = {
+        prompt,
+        aspect_ratio: aspectRatio === "9:16" ? "9:16" : "16:9"
+    };
+
+    switch (model) {
+        case 'kling':
+            falModelId = "fal-ai/kling-video/v1/standard/text-to-video";
+            inputParams = {
+                prompt,
+                aspect_ratio: aspectRatio === "9:16" ? "9:16" : "16:9",
+                duration: "5s" // Kling specific default
+            };
+            break;
+        case 'luma-ray':
+            falModelId = "fal-ai/luma-dream-machine";
+            inputParams = {
+                prompt,
+                aspect_ratio: aspectRatio === "9:16" ? "9:16" : "16:9"
+            };
+            break;
+        case 'runway-gen3':
+            // Warning: Runway on Fal is variable. Fallback to Hunyuan if not available, but try finding a public endpoint if known.
+            // For now, let's map it to Hunyuan with a log, or Luma.
+            console.warn("Runway Gen-3 requested but not configured on Fal. Defaulting to Hunyuan.");
+            falModelId = "fal-ai/hunyuan-video";
+            break;
+        case 'fal':
+        case 'minimax':
+            falModelId = "fal-ai/minimax-video";
+            inputParams = {
+                prompt,
+                aspect_ratio: aspectRatio === "9:16" ? "9:16" : "16:9"
+            };
+            break;
+        default:
+            // hunyuan-video
+            inputParams = {
+                prompt,
+                aspect_ratio: aspectRatio === "9:16" ? "9:16" : "16:9",
+                num_frames: 85,
+                num_inference_steps: 30
+            };
+            break;
+    }
+
+    console.log(`Generating video with Fal.ai (${falModelId})...`);
 
     try {
-        const result: any = await fal.subscribe("fal-ai/hunyuan-video", {
-            input: {
-                prompt: prompt,
-                aspect_ratio: aspect,
-                num_frames: 85, // ~3-4 seconds usually for this model
-                num_inference_steps: 30
-            },
+        const result: any = await fal.subscribe(falModelId, {
+            input: inputParams,
             logs: true,
             onQueueUpdate: (update: any) => {
                 if (update.status === 'IN_PROGRESS') {
-                    console.log("[Fal.ai Video] Generating...");
+                    console.log(`[Fal.ai Video] Generating (${model})...`);
                 }
             },
         });
@@ -209,7 +251,11 @@ export const generateVideo = async (prompt: string, aspectRatio: string = "16:9"
         if (result.video && result.video.url) {
             return result.video.url;
         }
-        throw new Error("No video returned from Fal.ai");
+        if (result.file_url) return result.file_url; // Some models return this
+        if (result.video_url) return result.video_url; // Some models return this
+
+        console.error("Fal Response:", result);
+        throw new Error("No video URL returned from Fal.ai");
     } catch (e: any) {
         console.error("Fal Video Error:", e);
         throw e;

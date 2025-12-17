@@ -337,8 +337,8 @@ export const generateImage = async (req: Request, res: Response) => {
 
 export const generateVideo = async (req: Request, res: Response) => {
     try {
-        const { prompt, aspectRatio } = req.body;
-        const video = await imageGen.generateVideo(prompt, aspectRatio);
+        const { prompt, aspectRatio, model } = req.body;
+        const video = await imageGen.generateVideo(prompt, aspectRatio, model);
         res.json({ video });
     } catch (error: any) {
         console.error("Video Gen Error:", error);
