@@ -782,7 +782,7 @@ export const GenerationView: React.FC<GenerationViewProps> = () => {
     const [imageAspectRatio, setImageAspectRatio] = useState<ImageAspectRatio>('1:1');
     const [imageStylePresets, setImageStylePresets] = useState<string[]>([]);
     const [imageMimeType, setImageMimeType] = useState<ImageMimeType>('image/jpeg');
-    const [videoModel, setVideoModel] = useState<VideoModel>('veo-3.1-fast-generate-preview');
+    const [videoModel, setVideoModel] = useState<VideoModel>('hunyuan-video');
     const [videoAspectRatio, setVideoAspectRatio] = useState<VideoAspectRatio>('16:9');
     const [resolution, setResolution] = useState<VideoResolution>('1080p');
     const [videoStylePresets, setVideoStylePresets] = useState<string[]>([]);
@@ -959,7 +959,7 @@ export const GenerationView: React.FC<GenerationViewProps> = () => {
                             assetData = JSON.parse(assetData);
                         } catch (e) {
                             // data is just a string? Use it if it's longer than name
-                            if (assetData.length > content.length) content = assetData;
+                            if ((assetData as string).length > content.length) content = assetData as string;
                             assetData = null; // Mark as failed object parse
                         }
                     }
