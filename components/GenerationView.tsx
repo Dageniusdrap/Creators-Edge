@@ -843,16 +843,23 @@ export const GenerationView: React.FC<GenerationViewProps> = () => {
     useEffect(() => {
         if (initialGenerationProps) {
             console.log('GenerationView: Consuming initialGenerationProps', initialGenerationProps);
-            setPrompt(initialGenerationProps.prompt);
+            if (initialGenerationProps.prompt) {
+                setPrompt(initialGenerationProps.prompt);
+            } else {
+                console.warn('GenerationView: initialGenerationProps.prompt is empty/undefined', initialGenerationProps);
+                // Fallback attempt: if we have settings with data, maybe use that? 
+            }
+
             setActiveTab(initialGenerationProps.type);
             if (initialGenerationProps.settings?.imageAspectRatio) {
                 setImageAspectRatio(initialGenerationProps.settings.imageAspectRatio);
             }
+
             // Ensure any previous local generation results are cleared when new props arrive
             resetLocalResults();
             onInitialPropsConsumed();
 
-            if (initialGenerationProps.autoStart) {
+            if (initialGenerationProps.autoStart && initialGenerationProps.prompt) {
                 // Pass the prompt and type directly to ensure we use the correct values immediately
                 handleGenerate(initialGenerationProps.prompt, initialGenerationProps.type);
             }
@@ -938,11 +945,34 @@ export const GenerationView: React.FC<GenerationViewProps> = () => {
         })[0];
 
         if (recentAsset) {
-            let content = recentAsset.name;
-            if (recentAsset.type === 'script' && recentAsset.data) {
-                // @ts-ignore
-                content = recentAsset.data.script || recentAsset.name;
+            let content = recentAsset.name; // Default to name
+
+            try {
+                // Check if data is present
+                if (recentAsset.data) {
+                    let assetData = recentAsset.data;
+
+                    // Parse if it's a string (defensive coding)
+                    if (typeof assetData === 'string') {
+                        try {
+                            assetData = JSON.parse(assetData);
+                        } catch (e) {
+                            // data is just a string? Use it if it's longer than name
+                            if (assetData.length > content.length) content = assetData;
+                            assetData = null; // Mark as failed object parse
+                        }
+                    }
+
+                    // Now extract script if it's a script type
+                    if (recentAsset.type === 'script' && assetData && typeof assetData === 'object' && 'script' in assetData) {
+                        // @ts-ignore
+                        if (assetData.script) content = assetData.script;
+                    }
+                }
+            } catch (err) {
+                console.error("Error parsing recent asset data", err);
             }
+
             setPrompt(content);
             addNotification(`Loaded: ${recentAsset.name}`, "success");
         }
