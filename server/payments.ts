@@ -30,7 +30,13 @@ export const createLemonCheckout = async (storeId: string, variantId: string, us
             },
         });
 
-        return result.data?.data.attributes.url;
+        // Safely access the URL
+        if (result.data && result.data.data && result.data.data.attributes) {
+            return result.data.data.attributes.url;
+        } else {
+            console.error('Lemon Squeezy Invalid Response:', JSON.stringify(result, null, 2));
+            throw new Error('Invalid response from payment provider');
+        }
     } catch (error) {
         console.error('Lemon Squeezy Checkout Error:', error);
         throw error;
