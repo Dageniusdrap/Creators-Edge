@@ -68,6 +68,7 @@ const GenerationControls: React.FC<{
     prompt: string;
     setPrompt: (p: string) => void;
     onOpenTemplates: () => void;
+    onLoadRecent: () => void;
     onClearAll: () => void;
     link: string;
     setLink: (l: string) => void;
@@ -232,6 +233,9 @@ const GenerationControls: React.FC<{
                 <div className="flex justify-between items-center">
                     <span className="text-white">Your Creative Prompt</span>
                     <div className="flex items-center gap-3">
+                        <button onClick={props.onLoadRecent} className="text-xs font-semibold text-green-400 hover:underline">
+                            Recent
+                        </button>
                         <button onClick={props.onClearAll} className="text-xs font-semibold text-red-400 hover:underline">
                             Clear All
                         </button>
@@ -745,6 +749,7 @@ export const GenerationView: React.FC<GenerationViewProps> = () => {
         updateSessionState,
         abortControllerRef,
         withApiErrorHandling,
+        projects, // Destructure projects for recent activity access
         // NEW: Generation-specific states from context, now managed globally.
         generatedImage, setGeneratedImage,
         generatedVideo, setGeneratedVideo,
@@ -905,6 +910,42 @@ export const GenerationView: React.FC<GenerationViewProps> = () => {
         setVoiceoverScripts([{ id: 1, speaker: 'Speaker 1', script: '', voice: 'Kore', style: 'Default' }]);
         // Add reset for other fields if necessary, or keep defaults
         addNotification('Inputs cleared.', 'info');
+    };
+
+    const handleLoadRecent = () => {
+        const safeProjects = Array.isArray(projects) ? projects : [];
+        const activeProject = safeProjects.find(p => p.id === activeProjectId);
+        const allAssets = safeProjects.flatMap(p => Array.isArray(p.assets) ? p.assets : []);
+
+        // Prioritize active project assets if available, else look at all assets
+        let assetsToSearch = activeProject && activeProject.assets && activeProject.assets.length > 0
+            ? activeProject.assets
+            : allAssets;
+
+        // Filter for assets that are relevant to generation (script, image, video, speech) if needed
+        // For now, allow any, but we primarily want text content
+
+        if (assetsToSearch.length === 0) {
+            addNotification("No recent activity found.", "info");
+            return;
+        }
+
+        // Find most recent
+        const recentAsset = [...assetsToSearch].sort((a, b) => {
+            const timeA = a.timestamp ? new Date(a.timestamp).getTime() : 0;
+            const timeB = b.timestamp ? new Date(b.timestamp).getTime() : 0;
+            return timeB - timeA;
+        })[0];
+
+        if (recentAsset) {
+            let content = recentAsset.name;
+            if (recentAsset.type === 'script' && recentAsset.data) {
+                // @ts-ignore
+                content = recentAsset.data.script || recentAsset.name;
+            }
+            setPrompt(content);
+            addNotification(`Loaded: ${recentAsset.name}`, "success");
+        }
     };
 
     const handleRetryStoryboardImage = async (index: number) => {
@@ -1342,6 +1383,7 @@ export const GenerationView: React.FC<GenerationViewProps> = () => {
                     prompt={prompt}
                     setPrompt={setPrompt}
                     onOpenTemplates={() => setIsTemplatesModalOpen(true)}
+                    onLoadRecent={handleLoadRecent}
                     onClearAll={handleClearInputs}
                     link={link}
                     setLink={setLink}
