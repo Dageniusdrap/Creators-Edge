@@ -136,4 +136,5 @@ export const api = {
       method: 'POST',
       body: JSON.stringify(body)
     }),
+  get: (endpoint: string) => request<any>(endpoint, { method: 'GET' }),
 };

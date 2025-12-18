@@ -338,10 +338,27 @@ export const generateImage = async (req: Request, res: Response) => {
 export const generateVideo = async (req: Request, res: Response) => {
     try {
         const { prompt, aspectRatio, model } = req.body;
-        const video = await imageGen.generateVideo(prompt, aspectRatio, model);
-        res.json({ video });
+        const result = await imageGen.submitVideo(prompt, aspectRatio, model);
+        res.json(result);
     } catch (error: any) {
         console.error("Video Gen Error:", error);
-        res.status(500).json({ error: error.message || "Failed to generate video" });
+        res.status(500).json({ error: error.message || "Failed to submit video generation" });
+    }
+};
+
+export const getVideoStatus = async (req: Request, res: Response) => {
+    try {
+        const { requestId } = req.params;
+        const { model } = req.query; // falModelId
+
+        if (!requestId || !model) {
+            return res.status(400).json({ error: "Missing requestId or model parameter" });
+        }
+
+        const status = await imageGen.checkVideoStatus(model as string, requestId);
+        res.json(status);
+    } catch (error: any) {
+        console.error("Video Status Error:", error);
+        res.status(500).json({ error: error.message || "Failed to check video status" });
     }
 };

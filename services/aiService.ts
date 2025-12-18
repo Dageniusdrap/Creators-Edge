@@ -273,10 +273,55 @@ export const generateSpeech = async (signal: AbortSignal, scripts: VoiceoverScri
 };
 
 export const generateVideo = async (signal: AbortSignal, prompt: string, model: string, aspectRatio: string, resolution: string, frames: File[]) => {
-    // We are routing this to our backend now (Fal.ai Hunyuan)
-    // Note: frames functionality isn't implemented in the simple backend handler yet
-    const { video } = await api.post('/ai/generate/video', { prompt, aspectRatio, model });
-    return { url: video, payload: { prompt, aspectRatio, model } };
+    // 1. Submit the job
+    const { requestId, falModelId } = await api.post('/ai/generate/video', { prompt, aspectRatio, model });
+
+    // 2. Poll for status (Models like Hunyuan/Kling take 2-5 minutes)
+    let attempts = 0;
+    while (attempts < 120) { // 120 * 5s = 600s = 10 minutes max
+        if (signal.aborted) {
+            throw new AbortError("Video generation cancelled.");
+        }
+
+        // Wait 5 seconds between checks
+        await new Promise(r => setTimeout(r, 5000));
+        attempts++;
+
+        try {
+            const status = await api.get(`/ai/generate/video/status/${requestId}?model=${encodeURIComponent(falModelId)}`);
+
+            if (status.status === 'COMPLETED') {
+                let videoUrl = '';
+
+                if (status.response_url) {
+                    const res = await fetch(status.response_url);
+                    const data = await res.json();
+
+                    if (data.video && data.video.url) videoUrl = data.video.url;
+                    else if (data.file_url) videoUrl = data.file_url;
+                    else if (data.video_url) videoUrl = data.video_url;
+                }
+
+                if (videoUrl) {
+                    return { url: videoUrl, payload: { prompt, aspectRatio, model } };
+                }
+
+                throw new Error("Video generation completed but no video URL was found in the response.");
+            }
+
+            if (status.status === 'FAILED') {
+                throw new Error(status.error || "Video generation failed.");
+            }
+
+            // If IN_QUEUE or IN_PROGRESS, continue polling
+        } catch (e: any) {
+            console.error("Video polling error:", e);
+            // Re-throw critical errors
+            if (e.message && (e.message.includes("failed") || e.message.includes("completed"))) throw e;
+            // Ignore transient errors
+        }
+    }
+    throw new Error("Video generation timed out after 10 minutes.");
 };
 
 export const extendVideo = async (signal: AbortSignal, prompt: string, previousOperation: any) => {

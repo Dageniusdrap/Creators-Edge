@@ -80,5 +80,6 @@ router.post('/ai/summarize-live-session', authenticateToken, aiHandlers.summariz
 // Image & Video
 router.post('/ai/generate/image', authenticateToken, aiHandlers.generateImage);
 router.post('/ai/generate/video', authenticateToken, aiHandlers.generateVideo);
+router.get('/ai/generate/video/status/:requestId', authenticateToken, aiHandlers.getVideoStatus);
 
 export default router;

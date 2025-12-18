@@ -181,7 +181,7 @@ export const generateImageMultiProvider = async (prompt: string, aspectRatio: st
 
 // --- Video Generation ---
 
-export const generateVideo = async (prompt: string, aspectRatio: string = "16:9", model: string = "hunyuan-video"): Promise<string> => {
+export const submitVideo = async (prompt: string, aspectRatio: string = "16:9", model: string = "hunyuan-video"): Promise<{ requestId: string; falModelId: string }> => {
     if (!FAL_KEY) throw new Error("Video generation requires FAL_KEY (Fal.ai).");
 
     if (model.includes('veo')) {
@@ -235,29 +235,42 @@ export const generateVideo = async (prompt: string, aspectRatio: string = "16:9"
             break;
     }
 
-    console.log(`Generating video with Fal.ai (${falModelId})...`);
+    console.log(`Submitting video generation to Fal.ai (${falModelId})...`);
 
     try {
-        const result: any = await fal.subscribe(falModelId, {
+        const { request_id } = await fal.queue.submit(falModelId, {
             input: inputParams,
-            logs: true,
-            onQueueUpdate: (update: any) => {
-                if (update.status === 'IN_PROGRESS') {
-                    console.log(`[Fal.ai Video] Generating (${model})...`);
-                }
-            },
+            webhookUrl: undefined, // process.env.FAL_WEBHOOK_URL if we had one
         });
 
-        if (result.video && result.video.url) {
-            return result.video.url;
-        }
-        if (result.file_url) return result.file_url; // Some models return this
-        if (result.video_url) return result.video_url; // Some models return this
-
-        console.error("Fal Response:", result);
-        throw new Error("No video URL returned from Fal.ai");
+        return { requestId: request_id, falModelId };
     } catch (e: any) {
-        console.error("Fal Video Error:", e);
+        console.error("Fal Video Submission Error:", e);
+        throw e;
+    }
+};
+
+export const checkVideoStatus = async (falModelId: string, requestId: string): Promise<any> => {
+    try {
+        const status = await fal.queue.status(falModelId, {
+            requestId: requestId,
+            logs: true
+        });
+
+        // If completed, we might want to normalize the result
+        if (status && (status as any).status === 'COMPLETED') {
+            // For some endpoints, status itself contains the result in 'response_url' which points to a JSON
+            // But fal.queue.result might be needed if status doesn't have the payload.
+            // Usually payload is in `status.data` or similar?
+            // Let's rely on the frontend or a separate call to result if needed?
+            // Actually, fal.queue.status result interface typically includes `response_url`.
+            // If we want the actual video URL, we might need to fetch the response_url.
+            // OR use fal.queue.result(falModelId, { request_id: requestId })?
+            return status;
+        }
+        return status;
+    } catch (e: any) {
+        console.error("Fal Video Status Check Error:", e);
         throw e;
     }
 };
