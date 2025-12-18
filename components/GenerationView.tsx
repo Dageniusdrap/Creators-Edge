@@ -663,7 +663,7 @@ const VideoResult: React.FC<{
     return (
         <div className="space-y-4">
             <div className="relative w-full">
-                <video ref={videoRef} src={video.url} controls autoPlay loop className="w-full rounded-lg" />
+                <video ref={videoRef} src={video.url} controls autoPlay loop muted playsInline className="w-full rounded-lg" />
                 {watermark && (
                     <div className="absolute bottom-4 right-4 text-white text-lg font-bold opacity-70 pointer-events-none" style={{ textShadow: '0 0 5px black' }}>
                         {watermark}
@@ -1538,7 +1538,7 @@ export const GenerationView: React.FC<GenerationViewProps> = () => {
                 {!isLoading && activeTab === 'video' && generatedVideo && (
                     <ResultCard
                         title="AI Generated Video"
-                        onSave={() => handleSaveAssetToProject(generatedVideo.url, 'video', prompt)}
+                        onSave={() => handleSaveAssetToProject(generatedVideo.url, 'video', prompt || 'Untitled Video')}
                     >
                         <VideoResult
                             video={generatedVideo}
