@@ -660,10 +660,36 @@ const VideoResult: React.FC<{
         }
     };
 
+    const audioRef = useRef<HTMLAudioElement>(null);
+
+    useEffect(() => {
+        const video = videoRef.current;
+        const audio = audioRef.current;
+        if (!video || !audio) return;
+
+        const handlePlay = () => audio.play().catch(e => console.log("Audio play blocked", e));
+        const handlePause = () => audio.pause();
+        const handleSeek = () => { audio.currentTime = video.currentTime; };
+        const handleRateChange = () => { audio.playbackRate = video.playbackRate; };
+
+        video.addEventListener('play', handlePlay);
+        video.addEventListener('pause', handlePause);
+        video.addEventListener('seeking', handleSeek);
+        video.addEventListener('ratechange', handleRateChange);
+
+        return () => {
+            video.removeEventListener('play', handlePlay);
+            video.removeEventListener('pause', handlePause);
+            video.removeEventListener('seeking', handleSeek);
+            video.removeEventListener('ratechange', handleRateChange);
+        };
+    }, [scriptAudio]);
+
     return (
         <div className="space-y-4">
             <div className="relative w-full">
                 <video ref={videoRef} src={video.url} controls autoPlay loop muted playsInline className="w-full rounded-lg" />
+                {scriptAudio && <audio ref={audioRef} src={scriptAudio.url} loop />}
                 {watermark && (
                     <div className="absolute bottom-4 right-4 text-white text-lg font-bold opacity-70 pointer-events-none" style={{ textShadow: '0 0 5px black' }}>
                         {watermark}
@@ -812,7 +838,7 @@ export const GenerationView: React.FC<GenerationViewProps> = () => {
         setImageAspectRatio(savedState.imageAspectRatio || '1:1');
         setImageStylePresets(savedState.imageStylePresets || []);
         setImageMimeType(savedState.imageMimeType || 'image/jpeg');
-        setVideoModel(savedState.videoModel || 'veo-3.1-fast-generate-preview');
+        setVideoModel(savedState.videoModel || 'hunyuan-video');
         setVideoAspectRatio(savedState.videoAspectRatio || '16:9');
         setResolution(savedState.resolution || '1080p');
         setVideoStylePresets(savedState.videoStylePresets || []);
@@ -854,6 +880,12 @@ export const GenerationView: React.FC<GenerationViewProps> = () => {
             setActiveTab(initialGenerationProps.type);
             if (initialGenerationProps.settings?.imageAspectRatio) {
                 setImageAspectRatio(initialGenerationProps.settings.imageAspectRatio);
+            }
+            if (initialGenerationProps.settings?.videoModel) {
+                setVideoModel(initialGenerationProps.settings.videoModel);
+            }
+            if (initialGenerationProps.settings?.generateAudio && initialGenerationProps.prompt) {
+                setVoiceoverScripts([{ id: 1, speaker: 'Narrator', script: initialGenerationProps.prompt, voice: 'alloy' }]);
             }
 
             // Ensure any previous local generation results are cleared when new props arrive

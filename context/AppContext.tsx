@@ -1007,7 +1007,7 @@ export const AppProvider: FC<{ children: ReactNode }> = ({ children }) => {
   }, [attemptGeneration, addNotification, scriptAudio, withApiErrorHandling, onSuccessfulGeneration]);
 
   const handleGenerateVideoFromScript = useCallback((script: string) => {
-    setInitialGenerationProps({ prompt: script, type: 'video', autoStart: true });
+    setInitialGenerationProps({ prompt: script, type: 'video', autoStart: true, settings: { videoModel: 'hunyuan-video', generateAudio: true } });
     handleTypeChange('contentGeneration'); // Navigate to Generation tab
   }, [handleTypeChange]);
 
